@@ -1,18 +1,38 @@
 package main
 
 import (
+	"context"
 	"log"
-	minIOService "room-planner/pkg/minio"
-
-	"github.com/labstack/echo/v4"
+	"room-planner/app"
+	"room-planner/observer"
+	"room-planner/router"
+	"room-planner/storage"
 )
 
 func main() {
-	err := minIOService.InitMinIO()
+	minioClient, err := storage.NewMinioClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	server := echo.New()
-	server.Logger.Fatal(server.Start(":4747"))
+	redisClient, err := storage.NewRedisClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := storage.NewMySQLConnection()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	application := app.New(db, minioClient, redisClient)
+
+	observer := observer.NewObserver(application)
+	observer.Start(context.Background())
+
+	server := router.New(application)
+	err = server.Start(":4747")
+	if err != nil {
+		log.Fatal(err)
+	}
 }
