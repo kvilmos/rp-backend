@@ -1,6 +1,8 @@
 package handler
 
-import "room-planner/service"
+import (
+	"room-planner/service"
+)
 
 type Handler struct {
 	UserService      *service.UserService

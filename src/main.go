@@ -10,6 +10,7 @@ import (
 	"room-planner/route"
 	"room-planner/service"
 	"room-planner/storage"
+	"room-planner/token"
 
 	"github.com/labstack/echo/v4"
 	"github.com/minio/minio-go/v7"
@@ -28,6 +29,9 @@ type Application struct {
 }
 
 func main() {
+	secretKey := "d4mqw2lvfivh7fcr32igzf5q12345678" // min 32
+	// env
+
 	db, err := storage.NewMySQLConnection()
 	if err != nil {
 		log.Fatal(err)
@@ -41,8 +45,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	jwtMaker := token.NewJWTMaker(secretKey)
+
 	userRepo := repository.NewUserRepository(db)
-	userService := service.NewUserService(userRepo, db)
+	sessionRepo := repository.NewSessionRepository(db)
+	userService := service.NewUserService(userRepo, sessionRepo, db, jwtMaker)
 
 	furnitureRepo := repository.NewFurnitureRepository(db)
 	fileRepo := repository.NewFileRepository(minioClient)
@@ -51,7 +58,7 @@ func main() {
 	queue := repository.NewQueue(redisClient)
 	furnitureService := service.NewFurnitureService(furnitureRepo, fileRepo, cacheRepo, queue, locker)
 
-	authMiddleware := middleware.NewAuthMiddleware(userService)
+	authMiddleware := middleware.NewAuthMiddleware(userService, jwtMaker)
 	apiHandler := handler.NewHandler(userService, furnitureService)
 
 	observer := observer.New(redisClient, *furnitureService)

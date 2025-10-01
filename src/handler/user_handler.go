@@ -1,14 +1,18 @@
 package handler
 
 import (
-	"room-planner/model"
+	"fmt"
+	"net/http"
+	"room-planner/dto"
 	"room-planner/request"
 	"room-planner/response"
+	"room-planner/token"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
-func (h Handler) Register(c echo.Context) error {
+func (h Handler) HandlerRegisterUser(c echo.Context) error {
 	regReq := new(request.RegisterRequest)
 	err := (&echo.DefaultBinder{}).BindBody(c, regReq)
 	if err != nil {
@@ -28,10 +32,12 @@ func (h Handler) Register(c echo.Context) error {
 		return response.SendInternalServerErrorResponse(c, err.Error())
 	}
 
-	return response.SendSuccessResponse(c, "Sign up successful", user)
+	userDto := dto.FromUserModel(user)
+
+	return response.SendSuccessResponse(c, "Sign up successful", userDto)
 }
 
-func (h Handler) Login(c echo.Context) error {
+func (h Handler) HandlerLoginUser(c echo.Context) error {
 	loginReq := new(request.LoginRequest)
 	err := (&echo.DefaultBinder{}).BindBody(c, loginReq)
 	if err != nil {
@@ -43,23 +49,90 @@ func (h Handler) Login(c echo.Context) error {
 		return response.SendFailedValidationResponse(c, validationErrors)
 	}
 
-	accessToken, refreshToken, userRetrieved, err := h.UserService.LoginUser(*loginReq)
+	accessToken, refreshToken, refreshClaims, user, err := h.UserService.LoginUser(*loginReq)
 	if err != nil {
 		return response.SendBadRequestResponse(c, err.Error())
 	}
 
-	return response.SendSuccessResponse(c, "User logged in", map[string]interface{}{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-		"user":          userRetrieved,
+	expiresAt := refreshClaims.RegisteredClaims.ExpiresAt.Time
+	maxAge := int(time.Until(expiresAt).Seconds())
+	cookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    *refreshToken,
+		Expires:  expiresAt,
+		MaxAge:   maxAge,
+		Path:     "/",
+		Domain:   "localhost",
+		Secure:   false,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	}
+	c.SetCookie(cookie)
+
+	return response.SendSuccessResponse(c, "User logged in", dto.LoginDTO{
+		AccessToken: *accessToken,
+		User:        *dto.FromUserModel(user),
 	})
 }
 
-func (h Handler) TestAuth(c echo.Context) error {
-	user, ok := c.Get("user").(model.User)
+func (h Handler) HandlerRenewToken(c echo.Context) error {
+	cookie, err := c.Cookie("refresh_token")
+	if err != nil {
+		return response.SendUnauthorizedResponse(c, err.Error())
+	}
+	refreshToken := cookie.Value
+
+	newAccessToken, newRefreshToken, newRefreshClaims, err := h.UserService.RenewUserAccessToken(refreshToken)
+	if err != nil {
+		return response.SendInternalServerErrorResponse(c, err.Error())
+	}
+
+	expiresAt := newRefreshClaims.RegisteredClaims.ExpiresAt.Time
+	maxAge := int(time.Until(expiresAt).Seconds())
+	newCookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    *newRefreshToken,
+		Expires:  expiresAt,
+		MaxAge:   maxAge,
+		Path:     "/",
+		Domain:   "localhost",
+		Secure:   false,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	}
+	c.SetCookie(newCookie)
+
+	return response.SendSuccessResponse(c, "token renewed", dto.RenewAccessTokenDto{
+		AccessToken: *newAccessToken,
+	})
+}
+
+func (h Handler) HandleLogoutUser(c echo.Context) error {
+	cookie, err := c.Cookie("refresh_token")
+	if err != nil {
+	}
+
+	refreshToken := cookie.Value
+	err = h.UserService.Logout(refreshToken)
+	if err != nil {
+
+	}
+
+	newCookie := http.Cookie{
+		Name:       "refresh_token",
+		RawExpires: "-1",
+	}
+	c.SetCookie(&newCookie)
+
+	return response.SendSuccessResponse(c, "logout success", "")
+}
+
+func (h Handler) VerifyUser(c echo.Context) error {
+	claims, ok := c.Get("user_claims").(token.UserClaims)
+	fmt.Println(claims)
 	if !ok {
 		return response.SendInternalServerErrorResponse(c, "User authentication failed")
 	}
 
-	return response.SendSuccessResponse(c, "Authenticated user retrieved", user)
+	return response.SendSuccessResponse(c, "Authenticated user retrieved", claims)
 }

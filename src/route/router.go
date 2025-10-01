@@ -7,16 +7,22 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func SetupRoutes(e *echo.Echo, handler *handler.Handler, auth *middleware.AuthMiddleware) {
-	e.POST("/signup", handler.Register)
-	e.POST("/login", handler.Login)
+func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middleware.AuthMiddleware) {
+	auth := e.Group("/auth")
+	{
+		auth.POST("/register", handler.HandlerRegisterUser)
+		auth.POST("/login", handler.HandlerLoginUser)
+		auth.POST("/token", handler.HandlerRenewToken)
+		auth.POST("/logout", handler.HandleLogoutUser)
+	}
 
 	e.POST("/furniture", handler.NewFurniture)
 	e.POST("/minio/upload-hook", handler.HandleUploadNotification)
 
-	authRequired := e.Group("/v1")
-	authRequired.Use(auth.Authenticate)
+	protected := e.Group("/protected")
+	protected.Use(authMiddleware.Authenticate)
 	{
-		authRequired.GET("/authrequired", handler.TestAuth)
+		protected.GET("", handler.VerifyUser)
 	}
+
 }

@@ -30,7 +30,7 @@ func (r *userRepository) Create(user *model.User) error {
 }
 
 func (r *userRepository) GetByEmail(email string) (*model.User, error) {
-	var user model.User
+	user := new(model.User)
 	sql := `SELECT id, username, email, password, created_at 
 			FROM user_t 
 			WHERE email = ?`
@@ -40,7 +40,7 @@ func (r *userRepository) GetByEmail(email string) (*model.User, error) {
 		return nil, err
 	}
 
-	return &user, err
+	return user, err
 }
 
 func (r *userRepository) GetById(id int64) (*model.User, error) {
