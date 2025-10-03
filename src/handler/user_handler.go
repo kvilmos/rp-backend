@@ -112,20 +112,49 @@ func (h Handler) HandleLogoutUser(c echo.Context) error {
 	if err != nil {
 	}
 
-	refreshToken := cookie.Value
-	err = h.UserService.Logout(refreshToken)
-	if err != nil {
+	if cookie != nil{
+		refreshToken := cookie.Value
+		err = h.UserService.Logout(refreshToken)
+		if err != nil {
 
+		}
+	}
+	
+
+
+	newCookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+		Path:     "/",
+		Domain:   "localhost",
+		Secure:   false,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 	}
 
-	newCookie := http.Cookie{
-		Name:       "refresh_token",
-		RawExpires: "-1",
-	}
-	c.SetCookie(&newCookie)
+	c.SetCookie(newCookie)
 
 	return response.SendSuccessResponse(c, "logout success", "")
 }
+
+func (h Handler) HandleVerifyUser(c echo.Context) error {
+	claims, ok := c.Get("user_claims").(token.UserClaims)
+	if !ok {
+		return response.SendInternalServerErrorResponse(c, "User authentication failed")
+	}
+
+	user, err := h.UserService.GetUserById(claims.Id)
+	if err != nil{
+		return response.SendInternalServerErrorResponse(c, "User authentication failed")
+	}
+
+	userDto := dto.FromUserModel(user)
+
+	return response.SendSuccessResponse(c, "Authenticated user retrieved", userDto)
+}
+
 
 func (h Handler) VerifyUser(c echo.Context) error {
 	claims, ok := c.Get("user_claims").(token.UserClaims)

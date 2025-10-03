@@ -1,5 +1,5 @@
 package dto
 
 type RenewAccessTokenDto struct {
-	AccessToken string `json:"access_token"`
+	AccessToken string `json:"accessToken"`
 }

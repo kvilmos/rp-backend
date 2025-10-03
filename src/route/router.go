@@ -16,6 +16,12 @@ func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middlew
 		auth.POST("/logout", handler.HandleLogoutUser)
 	}
 
+	verified := e.Group("/verify")
+	verified.Use(authMiddleware.Authenticate)
+	{
+		verified.GET("/me", handler.HandleVerifyUser)
+	}
+
 	e.POST("/furniture", handler.NewFurniture)
 	e.POST("/minio/upload-hook", handler.HandleUploadNotification)
 
