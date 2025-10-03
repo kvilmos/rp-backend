@@ -3,34 +3,70 @@ package main
 import (
 	"context"
 	"log"
-	"room-planner/app"
+	"room-planner/handler"
+	"room-planner/middleware"
 	"room-planner/observer"
-	"room-planner/router"
+	"room-planner/repository"
+	"room-planner/route"
+	"room-planner/service"
 	"room-planner/storage"
+	"room-planner/token"
+
+	"github.com/labstack/echo/v4"
+	"github.com/minio/minio-go/v7"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
-func main() {
-	minioClient, err := storage.NewMinioClient()
-	if err != nil {
-		log.Fatal(err)
-	}
+type Application struct {
+	Server *echo.Echo
+	Db     *gorm.DB
+	MinIO  *minio.Client
+	Redis  *redis.Client
 
-	redisClient, err := storage.NewRedisClient()
-	if err != nil {
-		log.Fatal(err)
-	}
+	APIHandler     *handler.Handler
+	AuthMiddleware *middleware.AuthMiddleware
+}
+
+func main() {
+	secretKey := "d4mqw2lvfivh7fcr32igzf5q12345678" // min 32
+	// env
 
 	db, err := storage.NewMySQLConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
+	minioClient, err := storage.NewMinioClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+	redisClient, err := storage.NewRedisClient()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	application := app.New(db, minioClient, redisClient)
+	jwtMaker := token.NewJWTMaker(secretKey)
 
-	observer := observer.NewObserver(application)
+	userRepo := repository.NewUserRepository(db)
+	sessionRepo := repository.NewSessionRepository(db)
+	userService := service.NewUserService(userRepo, sessionRepo, db, jwtMaker)
+
+	furnitureRepo := repository.NewFurnitureRepository(db)
+	fileRepo := repository.NewFileRepository(minioClient)
+	cacheRepo := repository.NewCacheRepository(redisClient)
+	locker := repository.NewLocker(redisClient)
+	queue := repository.NewQueue(redisClient)
+	furnitureService := service.NewFurnitureService(furnitureRepo, fileRepo, cacheRepo, queue, locker)
+
+	authMiddleware := middleware.NewAuthMiddleware(userService, jwtMaker)
+	apiHandler := handler.NewHandler(userService, furnitureService)
+
+	observer := observer.New(redisClient, *furnitureService)
 	observer.Start(context.Background())
 
-	server := router.New(application)
+	server := echo.New()
+	route.SetupRoutes(server, apiHandler, authMiddleware)
+
 	err = server.Start(":4747")
 	if err != nil {
 		log.Fatal(err)
