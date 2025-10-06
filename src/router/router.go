@@ -1,4 +1,4 @@
-package route
+package router
 
 import (
 	"room-planner/handler"
@@ -22,13 +22,18 @@ func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middlew
 		verified.GET("/me", handler.HandleVerifyUser)
 	}
 
-	e.POST("/furniture", handler.NewFurniture)
+	furniture := e.Group("/furniture")
+	furniture.Use(authMiddleware.Authenticate)
+	{
+		furniture.POST("", handler.NewFurniture)
+	}
 	e.POST("/minio/upload-hook", handler.HandleUploadNotification)
 
-	protected := e.Group("/protected")
-	protected.Use(authMiddleware.Authenticate)
-	{
-		protected.GET("", handler.VerifyUser)
-	}
-
+	/*
+		protected := e.Group("/protected")
+		protected.Use(authMiddleware.Authenticate)
+		{
+			protected.GET("", handler.VerifyUser)
+		}
+	*/
 }

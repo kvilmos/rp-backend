@@ -9,6 +9,7 @@ import (
 type Furniture struct {
 	Id         int64
 	Name       string
+	UserId     int64
 	CategoryId int8
 	FileName   uuid.UUID
 	CreatedAt  time.Time

@@ -1,8 +1,7 @@
 package service
 
 import (
-	"errors"
-	"fmt"
+	"room-planner/app"
 	"room-planner/model"
 	"room-planner/repository"
 	"room-planner/request"
@@ -36,7 +35,7 @@ func (s *UserService) RegisterUser(regReq request.RegisterRequest) (*model.User,
 	}
 
 	if existingUser.Id != 0 {
-		return nil, errors.New("email has already been taken")
+		return nil, app.ErrAlreadyExist
 	}
 
 	hashedPassword, err := util.HashPassword(regReq.Password)
@@ -65,7 +64,7 @@ func (s *UserService) LoginUser(loginReq request.LoginRequest) (*string, *string
 	}
 
 	if user.Id == 0 || !util.VerifyPassword(loginReq.Password, user.Password) {
-		return nil, nil, nil, nil, errors.New("invalid credentials")
+		return nil, nil, nil, nil, app.ErrInvalidCredentials
 	}
 
 	accessToken, _, err := s.JWTMaker.GenerateToken(user, 1*time.Second)
@@ -106,11 +105,11 @@ func (s *UserService) RenewUserAccessToken(oldRefreshToken string) (*string, *st
 	}
 
 	if oldSession.IsRevoked {
-		return nil, nil, nil, fmt.Errorf("session revoked")
+		return nil, nil, nil, app.ErrSessionRevoked
 	}
 
 	if oldSession.UserEmail != refreshClaims.Email {
-		return nil, nil, nil, fmt.Errorf("invalid session")
+		return nil, nil, nil, app.ErrInvalidSession
 	}
 
 	user, err := s.UserRepo.GetByEmail(refreshClaims.Email)
@@ -160,11 +159,11 @@ func (s *UserService) Logout(refreshToken string) error {
 	}
 
 	if session.IsRevoked {
-		return fmt.Errorf("session revoked")
+		return app.ErrSessionRevoked
 	}
 
 	if session.UserEmail != refreshClaims.Email {
-		return fmt.Errorf("invalid session")
+		return app.ErrInvalidSession
 	}
 	err = s.SessionRepo.Revoke(session.Id)
 	if err != nil {

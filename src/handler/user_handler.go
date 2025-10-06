@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
+	"room-planner/app"
 	"room-planner/dto"
 	"room-planner/request"
 	"room-planner/response"
@@ -16,20 +17,20 @@ func (h Handler) HandlerRegisterUser(c echo.Context) error {
 	regReq := new(request.RegisterRequest)
 	err := (&echo.DefaultBinder{}).BindBody(c, regReq)
 	if err != nil {
-		return response.SendInternalServerErrorResponse(c, err.Error())
+		return NewApiError(http.StatusBadRequest, INVALID_PAYLOAD, err)
 	}
 
 	validationErrors := h.ValidateRequestBody(c, *regReq)
 	if validationErrors != nil {
-		return response.SendFailedValidationResponse(c, validationErrors)
+		return NewApiError(http.StatusUnprocessableEntity, validationErrors, app.ErrValidationFailed)
 	}
 
 	user, err := h.UserService.RegisterUser(*regReq)
 	if err != nil {
-		if err.Error() == "email has already been taken" {
-			return response.SendBadRequestResponse(c, err.Error())
+		if errors.Is(err, app.ErrAlreadyExist) {
+			return NewApiError(http.StatusConflict, EMAIL_ALREADY_EXIST, err)
 		}
-		return response.SendInternalServerErrorResponse(c, err.Error())
+		return err
 	}
 
 	userDto := dto.FromUserModel(user)
@@ -41,17 +42,20 @@ func (h Handler) HandlerLoginUser(c echo.Context) error {
 	loginReq := new(request.LoginRequest)
 	err := (&echo.DefaultBinder{}).BindBody(c, loginReq)
 	if err != nil {
-		return response.SendBadRequestResponse(c, err.Error())
+		return NewApiError(http.StatusBadRequest, INVALID_PAYLOAD, err)
 	}
 
 	validationErrors := h.ValidateRequestBody(c, *loginReq)
 	if validationErrors != nil {
-		return response.SendFailedValidationResponse(c, validationErrors)
+		return NewApiError(http.StatusUnprocessableEntity, validationErrors, app.ErrValidationFailed)
 	}
 
 	accessToken, refreshToken, refreshClaims, user, err := h.UserService.LoginUser(*loginReq)
 	if err != nil {
-		return response.SendBadRequestResponse(c, err.Error())
+		if errors.Is(err, app.ErrInvalidCredentials) {
+			return NewApiError(http.StatusConflict, INVALID_LOGIN_CREDENTIALS, err)
+		}
+		return err
 	}
 
 	expiresAt := refreshClaims.RegisteredClaims.ExpiresAt.Time
@@ -78,13 +82,13 @@ func (h Handler) HandlerLoginUser(c echo.Context) error {
 func (h Handler) HandlerRenewToken(c echo.Context) error {
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
-		return response.SendUnauthorizedResponse(c, err.Error())
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, err)
 	}
 	refreshToken := cookie.Value
 
 	newAccessToken, newRefreshToken, newRefreshClaims, err := h.UserService.RenewUserAccessToken(refreshToken)
 	if err != nil {
-		return response.SendInternalServerErrorResponse(c, err.Error())
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, err)
 	}
 
 	expiresAt := newRefreshClaims.RegisteredClaims.ExpiresAt.Time
@@ -110,17 +114,16 @@ func (h Handler) HandlerRenewToken(c echo.Context) error {
 func (h Handler) HandleLogoutUser(c echo.Context) error {
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
+		return err
 	}
 
-	if cookie != nil{
+	if cookie != nil {
 		refreshToken := cookie.Value
 		err = h.UserService.Logout(refreshToken)
 		if err != nil {
-
+			return err
 		}
 	}
-	
-
 
 	newCookie := &http.Cookie{
 		Name:     "refresh_token",
@@ -142,12 +145,14 @@ func (h Handler) HandleLogoutUser(c echo.Context) error {
 func (h Handler) HandleVerifyUser(c echo.Context) error {
 	claims, ok := c.Get("user_claims").(token.UserClaims)
 	if !ok {
-		return response.SendInternalServerErrorResponse(c, "User authentication failed")
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+
 	}
 
 	user, err := h.UserService.GetUserById(claims.Id)
-	if err != nil{
-		return response.SendInternalServerErrorResponse(c, "User authentication failed")
+	if err != nil {
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, err)
+
 	}
 
 	userDto := dto.FromUserModel(user)
@@ -155,13 +160,13 @@ func (h Handler) HandleVerifyUser(c echo.Context) error {
 	return response.SendSuccessResponse(c, "Authenticated user retrieved", userDto)
 }
 
+/*
+	func (h Handler) VerifyUser(c echo.Context) error {
+		claims, ok := c.Get("user_claims").(token.UserClaims)
+		if !ok {
+			return response.SendInternalServerErrorResponse(c, "User authentication failed")
+		}
 
-func (h Handler) VerifyUser(c echo.Context) error {
-	claims, ok := c.Get("user_claims").(token.UserClaims)
-	fmt.Println(claims)
-	if !ok {
-		return response.SendInternalServerErrorResponse(c, "User authentication failed")
+		return response.SendSuccessResponse(c, "Authenticated user retrieved", claims)
 	}
-
-	return response.SendSuccessResponse(c, "Authenticated user retrieved", claims)
-}
+*/

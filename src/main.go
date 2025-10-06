@@ -7,7 +7,7 @@ import (
 	"room-planner/middleware"
 	"room-planner/observer"
 	"room-planner/repository"
-	"room-planner/route"
+	"room-planner/router"
 	"room-planner/service"
 	"room-planner/storage"
 	"room-planner/token"
@@ -65,8 +65,10 @@ func main() {
 	observer.Start(context.Background())
 
 	server := echo.New()
-	route.SetupRoutes(server, apiHandler, authMiddleware)
 
+	server.Use(middleware.ErrorMiddleware)
+
+	router.SetupRoutes(server, apiHandler, authMiddleware)
 	err = server.Start(":4747")
 	if err != nil {
 		log.Fatal(err)
