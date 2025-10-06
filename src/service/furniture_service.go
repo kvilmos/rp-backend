@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"room-planner/app"
 	"room-planner/common/constant"
 	"room-planner/model"
 	"room-planner/repository"
@@ -31,6 +31,7 @@ func NewFurnitureService(fr repository.FurnitureRepository, fs repository.FileSt
 }
 
 type FurnitureUploadStatus struct {
+	UserId int64`json:"userId"`
 	FurnitureName       string `json:"furnitureName"`
 	IsThumbnailUploaded bool   `json:"isThumbnailUploaded"`
 	IsObjectUploaded    bool   `json:"isObjectUploaded"`
@@ -47,7 +48,7 @@ type UploadNotification struct {
 	RetryCount int
 }
 
-func (s FurnitureService) PrepareUpload(ctx context.Context, furnitureName string) (*FurnitureUploadLinks, error) {
+func (s FurnitureService) PrepareUpload(ctx context.Context, furniture request.NewFurnitureRequest) (*FurnitureUploadLinks, error) {
 	fileId := uuid.New().String()
 	objectUrl, err := s.FileStore.GenerateSignedUploadUrl(ctx, constant.FURNITURE_BUCKET, fileId, constant.SIGNATURE_TTL)
 	if err != nil {
@@ -59,7 +60,8 @@ func (s FurnitureService) PrepareUpload(ctx context.Context, furnitureName strin
 	}
 
 	uploadStatus := FurnitureUploadStatus{
-		FurnitureName: furnitureName,
+		UserId: furniture.UserId,
+		FurnitureName: furniture.Name,
 	}
 
 	if err := s.Cache.Set(ctx, fileId, uploadStatus, constant.UPLOAD_TTL); err != nil {
@@ -74,9 +76,8 @@ func (s FurnitureService) PrepareUpload(ctx context.Context, furnitureName strin
 }
 
 func (s FurnitureService) QueueUploadNotification(ctx context.Context, notification request.MinioNotification) error {
-	fmt.Println("IN SERVICE - QUEUE")
 	if len(notification.Records) < 1 {
-		return fmt.Errorf("webhook notification contained no records")
+		return app.ErrMinioNotificationEmpty
 	}
 
 	for _, record := range notification.Records {
@@ -84,7 +85,6 @@ func (s FurnitureService) QueueUploadNotification(ctx context.Context, notificat
 			BucketName: record.S3.Bucket.Name,
 			ObjectKey:  record.S3.Object.Key,
 		}
-		fmt.Println("IN SERVICE - ", internalNotification)
 
 		err := s.Queue.Enqueue(ctx, constant.UPLOAD_QUEUE_NAME, internalNotification)
 		if err != nil {
@@ -147,6 +147,7 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 			log.Printf("INFO: Furniture with key %s already exists in DB. Skipping insert.", fileId)
 		} else {
 			newFurniture := model.Furniture{
+				UserId: uploadStatus.UserId,
 				Name:     uploadStatus.FurnitureName,
 				FileName: fileId,
 			}

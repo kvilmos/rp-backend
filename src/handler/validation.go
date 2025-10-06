@@ -1,18 +1,22 @@
 package handler
 
 import (
-	"fmt"
 	"reflect"
-	"room-planner/response"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
 
-func (h *Handler) ValidateRequestBody(c echo.Context, payload interface{}) []*response.ValidationError {
+type ValidationError struct {
+	Key       string `json:"key"`
+	Condition string `json:"condition"`
+	Param  map[string]string  `json:"param,omitempty"`
+}
+
+func (h *Handler) ValidateRequestBody(c echo.Context, payload interface{}) []*ValidationError {
 	validate := validator.New(validator.WithRequiredStructEnabled())
-	var errors []*response.ValidationError
+	var errors []*ValidationError
 	err := validate.Struct(payload)
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if ok {
@@ -25,26 +29,20 @@ func (h *Handler) ValidateRequestBody(c echo.Context, payload interface{}) []*re
 			if key == "" {
 				key = strings.ToLower(validationErr.StructField())
 			}
-
+			
 			condition := validationErr.Tag()
-			keyToTitleCase := strings.Replace(key, "_", " ", -1)
-			errMessage := keyToTitleCase + " field is " + condition
 			param := validationErr.Param()
-
+			paramMap := make(map[string]string)
 			switch condition {
-			case "required":
-				errMessage = keyToTitleCase + " required"
-			case "email":
-				errMessage = keyToTitleCase + " must be a valid email"
 			case "min":
-				errMessage = fmt.Sprintf("%s must be az least %s character", keyToTitleCase, param)
+				paramMap["requiredLength"]  = param
 			case "max":
-				errMessage = fmt.Sprintf("%s cannot be az more than %s character", keyToTitleCase, param)
+				paramMap["maximumLength"] = param
 			}
 
-			currentValidationError := response.ValidationError{
-				Error:     errMessage,
+			currentValidationError := ValidationError{
 				Key:       key,
+				Param: paramMap,
 				Condition: condition,
 			}
 			errors = append(errors, &currentValidationError)

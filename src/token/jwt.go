@@ -1,8 +1,7 @@
 package token
 
 import (
-	"errors"
-	"fmt"
+	"room-planner/app"
 	"room-planner/model"
 	"time"
 
@@ -38,7 +37,7 @@ func (m *JWTMaker) VerifyToken(tokenStr string) (*UserClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			return nil, fmt.Errorf("invalid token string method")
+			return nil, app.ErrInvalidTokenString
 		}
 
 		return []byte(m.secretKey), nil
@@ -51,7 +50,7 @@ func (m *JWTMaker) VerifyToken(tokenStr string) (*UserClaims, error) {
 
 	claims, ok := token.Claims.(*UserClaims)
 	if !ok {
-		return nil, errors.New("invalid token claims")
+		return nil, app.ErrInvalidTokenClaims
 	}
 
 	return claims, nil

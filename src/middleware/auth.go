@@ -1,8 +1,9 @@
 package middleware
 
 import (
-	"fmt"
-	"room-planner/response"
+	"net/http"
+	"room-planner/app"
+	"room-planner/handler"
 	"room-planner/service"
 	"room-planner/token"
 	"strings"
@@ -27,19 +28,18 @@ func (auth *AuthMiddleware) Authenticate(next echo.HandlerFunc) echo.HandlerFunc
 		c.Response().Header().Add("Vary", "Authorization")
 		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" {
-			return response.SendUnauthorizedResponse(c, "authorization header is missing")
+			return handler.NewApiError(http.StatusUnauthorized, handler.UNAUTHORIZED_REQUEST, app.ErrAuthHeaderMissing)
 		}
 
 		fields := strings.Fields(authHeader)
 		if len(fields) != 2 || fields[0] != "Bearer" {
-			return response.SendUnauthorizedResponse(c, "invalid authorization header")
+			return handler.NewApiError(http.StatusUnauthorized, handler.UNAUTHORIZED_REQUEST, app.ErrInvalidAuthHeader)
 		}
 
 		token := fields[1]
 		claims, err := auth.JWTMaker.VerifyToken(token)
 		if err != nil {
-			fmt.Println(err)
-			return response.SendUnauthorizedResponse(c, err.Error())
+			return handler.NewApiError(http.StatusUnauthorized, handler.UNAUTHORIZED_REQUEST, err)
 		}
 		c.Set("user_claims", *claims)
 
