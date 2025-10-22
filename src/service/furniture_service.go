@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"log"
+	"net/url"
 	"room-planner/app"
 	"room-planner/common/constant"
 	"room-planner/model"
@@ -31,7 +32,7 @@ func NewFurnitureService(fr repository.FurnitureRepository, fs repository.FileSt
 }
 
 type FurnitureUploadStatus struct {
-	UserId int64`json:"userId"`
+	UserId              int64  `json:"userId"`
 	FurnitureName       string `json:"furnitureName"`
 	IsThumbnailUploaded bool   `json:"isThumbnailUploaded"`
 	IsObjectUploaded    bool   `json:"isObjectUploaded"`
@@ -60,7 +61,7 @@ func (s FurnitureService) PrepareUpload(ctx context.Context, furniture request.N
 	}
 
 	uploadStatus := FurnitureUploadStatus{
-		UserId: furniture.UserId,
+		UserId:        furniture.UserId,
 		FurnitureName: furniture.Name,
 	}
 
@@ -147,7 +148,7 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 			log.Printf("INFO: Furniture with key %s already exists in DB. Skipping insert.", fileId)
 		} else {
 			newFurniture := model.Furniture{
-				UserId: uploadStatus.UserId,
+				UserId:   uploadStatus.UserId,
 				Name:     uploadStatus.FurnitureName,
 				FileName: fileId,
 			}
@@ -177,4 +178,24 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 	}
 
 	return nil
+}
+
+func (s FurnitureService) GetFurnitureById(ctx context.Context, id int64) (*model.Furniture, error) {
+	return s.FurnitureRepo.GetById(id)
+}
+
+func (s FurnitureService) ListFurniture(ctx context.Context) ([]*model.Furniture, error) {
+	return s.FurnitureRepo.List()
+}
+
+func (s FurnitureService) PageFurniture(ctx context.Context, page int, filter request.FurnitureFilter) ([]*model.Furniture, error) {
+	return s.FurnitureRepo.Page(page, filter)
+}
+
+func (s FurnitureService) GetFurnitureCount(ctx context.Context) (int, error) {
+	return s.FurnitureRepo.Count()
+}
+
+func (s FurnitureService) GetFurnitureFileUrl(ctx context.Context, fileName uuid.UUID, bucker string) (*url.URL, error) {
+	return s.FileStore.GenerateSignedDownloadUrl(ctx, bucker, fileName.String(), constant.SIGNATURE_TTL)
 }
