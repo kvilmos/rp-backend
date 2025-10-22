@@ -10,6 +10,7 @@ import (
 
 type FileStore interface {
 	GenerateSignedUploadUrl(ctx context.Context, bucket string, fileKey string, ttl time.Duration) (*url.URL, error)
+	GenerateSignedDownloadUrl(ctx context.Context, bucket string, fileKey string, ttl time.Duration) (*url.URL, error)
 }
 
 type fileRepository struct {
@@ -25,4 +26,8 @@ func NewFileRepository(client *minio.Client) FileStore {
 func (r *fileRepository) GenerateSignedUploadUrl(ctx context.Context, bucket string, fileKey string, ttl time.Duration) (*url.URL, error) {
 	presignedUrl, err := r.minioClient.PresignedPutObject(ctx, bucket, fileKey, ttl)
 	return presignedUrl, err
+}
+
+func (r *fileRepository) GenerateSignedDownloadUrl(ctx context.Context, bucket string, fileKey string, ttl time.Duration) (*url.URL, error) {
+	return r.minioClient.PresignedGetObject(context.Background(), bucket, fileKey, ttl, nil)
 }

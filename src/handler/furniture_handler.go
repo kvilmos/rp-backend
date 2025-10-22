@@ -2,11 +2,15 @@ package handler
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"room-planner/app"
+	"room-planner/common/constant"
+	"room-planner/dto"
 	"room-planner/request"
 	"room-planner/response"
 	"room-planner/token"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -37,6 +41,128 @@ func (h *Handler) NewFurniture(c echo.Context) error {
 	}
 
 	return response.SendSuccessResponse(c, "Successful url request", urls)
+}
+
+func (h *Handler) ListFurniture(c echo.Context) error {
+	ctx := context.Background()
+	furnitureList, err := h.FurnitureService.ListFurniture(ctx)
+	if err != nil {
+		return err
+	}
+
+	var furnitureListDto []dto.FurnitureDto
+	for _, furniture := range furnitureList {
+		furnitureDto := dto.FromFurnitureModel(furniture)
+
+		thumbnailUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.THUMBNAIL_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		objectUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.FURNITURE_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		furnitureDto.ObjectUrl = objectUrl.String()
+		furnitureDto.ThumbnailUrl = thumbnailUrl.String()
+
+		furnitureListDto = append(furnitureListDto, *furnitureDto)
+	}
+
+	return response.SendSuccessResponse(c, "furniture list", furnitureListDto)
+}
+
+func (h *Handler) PageFurniture(c echo.Context) error {
+	pageStr := c.Param("page")
+
+	page := 1
+	if pageStr != "" {
+		newPage, err := strconv.Atoi(pageStr)
+		if err != nil {
+			return err
+		}
+		page = newPage
+	}
+
+	sortBy := c.QueryParam("sortByCreateAt")
+	filter := request.FurnitureFilter{
+		SortByDate: sortBy,
+	}
+
+	ctx := context.Background()
+	furnitureList, err := h.FurnitureService.PageFurniture(ctx, page, filter)
+	if err != nil {
+		return err
+	}
+
+	var furnitureListDto []dto.FurnitureDto
+	for _, furniture := range furnitureList {
+		furnitureDto := dto.FromFurnitureModel(furniture)
+
+		thumbnailUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.THUMBNAIL_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		objectUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.FURNITURE_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		furnitureDto.ObjectUrl = objectUrl.String()
+		furnitureDto.ThumbnailUrl = thumbnailUrl.String()
+
+		furnitureListDto = append(furnitureListDto, *furnitureDto)
+	}
+
+	var totalRows int
+	totalRows, err = h.FurnitureService.GetFurnitureCount(ctx)
+	if err != nil {
+		return err
+	}
+	totalPages := math.Ceil(float64(totalRows) / constant.PAGE_LIMIT)
+
+	responseDto := dto.FurniturePaginationDto{
+		NextPage:   page + 1,
+		PrevPage:   page - 1,
+		CurrPage:   page,
+		TotalPages: int(totalPages),
+		List:       furnitureListDto,
+	}
+
+	return response.SendSuccessResponse(c, "furniture page", responseDto)
+}
+
+func (h *Handler) GetFurnitureById(c echo.Context) error {
+	pageStr := c.Param("id")
+	id, err := strconv.Atoi(pageStr)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+
+	furniture, err := h.FurnitureService.GetFurnitureById(ctx, int64(id))
+	if err != nil {
+		return err
+	}
+
+	furnDto := dto.FromFurnitureModel(furniture)
+
+	thumbnailUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.THUMBNAIL_BUCKET)
+	if err != nil {
+		return err
+	}
+
+	objectUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.FURNITURE_BUCKET)
+	if err != nil {
+		return err
+	}
+
+	furnDto.ThumbnailUrl = thumbnailUrl.String()
+	furnDto.ObjectUrl = objectUrl.String()
+
+	return response.SendSuccessResponse(c, "furniture", furnDto)
 }
 
 func (h *Handler) HandleUploadNotification(c echo.Context) error {

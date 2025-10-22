@@ -26,14 +26,9 @@ func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middlew
 	furniture.Use(authMiddleware.Authenticate)
 	{
 		furniture.POST("", handler.NewFurniture)
+		furniture.GET("", handler.ListFurniture)
+		furniture.GET("/page/:page", handler.PageFurniture)
+		furniture.GET("/:id", handler.GetFurnitureById)
 	}
 	e.POST("/minio/upload-hook", handler.HandleUploadNotification)
-
-	/*
-		protected := e.Group("/protected")
-		protected.Use(authMiddleware.Authenticate)
-		{
-			protected.GET("", handler.VerifyUser)
-		}
-	*/
 }

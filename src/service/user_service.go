@@ -67,7 +67,7 @@ func (s *UserService) LoginUser(loginReq request.LoginRequest) (*string, *string
 		return nil, nil, nil, nil, app.ErrInvalidCredentials
 	}
 
-	accessToken, _, err := s.JWTMaker.GenerateToken(user, 1*time.Second)
+	accessToken, _, err := s.JWTMaker.GenerateToken(user, 10*time.Minute)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
