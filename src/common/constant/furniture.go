@@ -1,3 +1,3 @@
 package constant
 
-const PAGE_LIMIT = 5
+const PAGE_LIMIT = 15
