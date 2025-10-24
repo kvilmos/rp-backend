@@ -8,6 +8,7 @@ type Item struct {
 	PosY        float64
 	PosZ        float64
 	Rot         float64
+	Furniture   *Furniture
 }
 
 func (Item) TableName() string {

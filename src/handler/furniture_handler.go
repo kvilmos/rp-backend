@@ -123,7 +123,7 @@ func (h *Handler) PageFurniture(c echo.Context) error {
 	}
 	totalPages := math.Ceil(float64(totalRows) / constant.PAGE_LIMIT)
 
-	responseDto := dto.FurniturePaginationDto{
+	responseDto := dto.FurniturePageDto{
 		NextPage:   page + 1,
 		PrevPage:   page - 1,
 		CurrPage:   page,

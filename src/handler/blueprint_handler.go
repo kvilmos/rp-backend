@@ -2,8 +2,11 @@ package handler
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"net/http"
 	"room-planner/app"
+	"room-planner/common/constant"
 	"room-planner/dto"
 	"room-planner/request"
 	"room-planner/response"
@@ -31,6 +34,53 @@ func (h Handler) HandleCreateBlueprint(c echo.Context) error {
 	return response.SendSuccessResponse(c, "Blueprint created", bpDto)
 }
 
+func (h Handler) HandleListBlueprints(c echo.Context) error {
+	ctx := context.Background()
+	blueprints, err := h.BpService.ListBlueprints(ctx)
+	if err != nil {
+		return err
+	}
+	blueprintsDto := dto.FromBlueprintsModel(blueprints)
+
+	return response.SendSuccessResponse(c, "All Blueprints listed", blueprintsDto)
+}
+
+func (h Handler) HandlePageBlueprints(c echo.Context) error {
+	pageStr := c.Param("page")
+
+	page := 1
+	if pageStr != "" {
+		newPage, err := strconv.Atoi(pageStr)
+		if err != nil {
+			return err
+		}
+		page = newPage
+	}
+
+	ctx := context.Background()
+	blueprints, err := h.BpService.PageBlueprints(ctx, page)
+	if err != nil {
+		return err
+	}
+
+	var totalRows int
+	totalRows, err = h.BpService.GetBlueprintCount(ctx)
+	if err != nil {
+		return err
+	}
+	totalPages := math.Ceil(float64(totalRows) / constant.PAGE_LIMIT)
+
+	pageDto := dto.BlueprintPageDto{
+		NextPage:   page + 1,
+		PrevPage:   page - 1,
+		CurrPage:   page,
+		TotalPages: int(totalPages),
+		List:       dto.FromBlueprintsModel(blueprints),
+	}
+
+	return response.SendSuccessResponse(c, "Blueprint paged", pageDto)
+}
+
 func (h Handler) HandleSaveBlueprint(c echo.Context) error {
 	claims, ok := c.Get("user_claims").(token.UserClaims)
 	if !ok {
@@ -44,49 +94,69 @@ func (h Handler) HandleSaveBlueprint(c echo.Context) error {
 	}
 
 	pageStr := c.Param("id")
-	bpId := int(blueprintReq.Id)
+	blueprintId := int(blueprintReq.Id)
 	if pageStr != "" {
-		bpId, err = strconv.Atoi(pageStr)
+		blueprintId, err = strconv.Atoi(pageStr)
 		if err != nil {
 			return err
 		}
 	}
 
 	ctx := context.Background()
-	bp, err := h.BpService.GetBlueprintById(ctx, int64(bpId))
+	blueprint, err := h.BpService.GetBlueprintById(ctx, int64(blueprintId))
 	if err != nil {
 		return err
 	}
 
-	if bp.UserId == 0 {
-		bp, err = h.BpService.CreateBlueprint(ctx, *blueprintReq)
+	if blueprint.UserId == 0 {
+		blueprint, err = h.BpService.CreateBlueprint(ctx, *blueprintReq)
 		if err != nil {
 			return err
 		}
 	}
 
-	if bp.UserId != claims.Id {
+	if blueprint.UserId != claims.Id {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrCreatorIdMismatch)
 	}
 
-	blueprintReq.Id = bp.Id
+	blueprintReq.Id = blueprint.Id
 	blueprintReq.UserId = claims.Id
-	bp, err = h.BpService.SaveBlueprint(ctx, *blueprintReq)
+	blueprint, err = h.BpService.SaveBlueprint(ctx, *blueprintReq)
 	if err != nil {
 		return err
 	}
 
-	bpDto := dto.FromBlueprintModel(*bp)
+	bpDto := dto.FromBlueprintModel(*blueprint)
 
-	return response.SendSuccessResponse(c, "Blueprint created", bpDto)
+	return response.SendSuccessResponse(c, "Blueprint saved", bpDto)
 }
 
-func (h Handler) HandleListBlueprints(c echo.Context) error {
+func (h Handler) HandleListCompleteBlueprints(c echo.Context) error {
+	ctx := context.Background()
+	blueprints, err := h.BpService.GetCompleteBlueprints(ctx)
+	if err != nil {
+		return err
+	}
+	blueprintsDto := dto.FromCompleteBlueprintsModel(blueprints)
 
-	return response.SendSuccessResponse(c, "Blueprint created", nil)
+	return response.SendSuccessResponse(c, "All Complete blueprints listed", blueprintsDto)
 }
 
-func (h Handler) HandleGetBlueprintById(c echo.Context) error {
+func (h Handler) HandleGetCompleteBlueprintById(c echo.Context) error {
+	pageStr := c.Param("id")
+	id, err := strconv.Atoi(pageStr)
+	if err != nil {
+		return err
+	}
 
-	return response.SendSuccessResponse(c, "Blueprint created", nil)
+	ctx := context.Background()
+	blueprint, err := h.BpService.GetCompleteBlueprintById(ctx, int64(id))
+	if err != nil {
+		return err
+	}
+	fmt.Println(blueprint)
+
+	blueprintDto := dto.FromCompleteBlueprintModel(*blueprint)
+
+	return response.SendSuccessResponse(c, "Complete Blueprint ", blueprintDto)
 }
