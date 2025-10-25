@@ -37,7 +37,7 @@ func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middlew
 		blueprint.POST("", handler.HandleCreateBlueprint)
 		blueprint.GET("", handler.HandleListBlueprints)
 		blueprint.PUT("/:id", handler.HandleSaveBlueprint)
-		blueprint.GET("/page/:id", handler.HandlePageBlueprints)
+		blueprint.GET("/page/:page", handler.HandlePageBlueprints)
 		blueprint.GET("/complete", handler.HandleListCompleteBlueprints)
 		blueprint.GET("/complete/:id", handler.HandleGetCompleteBlueprintById)
 	}

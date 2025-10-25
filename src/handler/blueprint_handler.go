@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"net/http"
 	"room-planner/app"
@@ -154,9 +153,33 @@ func (h Handler) HandleGetCompleteBlueprintById(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(blueprint)
+
+	processedFurniture := make(map[int64]bool)
+	var furnitureListDto []dto.FurnitureDto
+	for _, item := range blueprint.Items {
+		if processedFurniture[item.FurnitureId] {
+			continue
+		}
+		furnitureDto := dto.FromFurnitureModel(item.Furniture)
+
+		thumbnailUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, item.Furniture.FileName, constant.THUMBNAIL_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		objectUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, item.Furniture.FileName, constant.FURNITURE_BUCKET)
+		if err != nil {
+			return err
+		}
+		furnitureDto.ThumbnailUrl = thumbnailUrl.String()
+		furnitureDto.ObjectUrl = objectUrl.String()
+
+		furnitureListDto = append(furnitureListDto, *furnitureDto)
+		processedFurniture[item.FurnitureId] = true
+	}
 
 	blueprintDto := dto.FromCompleteBlueprintModel(*blueprint)
+	blueprintDto.Furniture = furnitureListDto
 
 	return response.SendSuccessResponse(c, "Complete Blueprint ", blueprintDto)
 }

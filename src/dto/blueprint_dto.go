@@ -13,13 +13,14 @@ type BlueprintDto struct {
 }
 
 type BlueprintCompleteDto struct {
-	Id         int64       `json:"id"`
-	UserId     int64       `json:"userId"`
-	CreatedAt  time.Time   `json:"createAt"`
-	ModifiedAt time.Time   `json:"modifiedAt"`
-	Corners    []CornerDto `json:"corners"`
-	Walls      []WallDto   `json:"walls"`
-	Items      []ItemDto   `json:"items"`
+	Id         int64          `json:"id"`
+	UserId     int64          `json:"userId"`
+	CreatedAt  time.Time      `json:"createAt"`
+	ModifiedAt time.Time      `json:"modifiedAt"`
+	Corners    []CornerDto    `json:"corners"`
+	Walls      []WallDto      `json:"walls"`
+	Items      []ItemDto      `json:"items"`
+	Furniture  []FurnitureDto `json:"furniture"`
 }
 
 type BlueprintPageDto struct {
