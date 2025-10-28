@@ -32,10 +32,13 @@ func NewFurnitureService(fr repository.FurnitureRepository, fs repository.FileSt
 }
 
 type FurnitureUploadStatus struct {
-	UserId              int64  `json:"userId"`
-	FurnitureName       string `json:"furnitureName"`
-	IsThumbnailUploaded bool   `json:"isThumbnailUploaded"`
-	IsObjectUploaded    bool   `json:"isObjectUploaded"`
+	UserId              int64   `json:"userId"`
+	FurnitureName       string  `json:"furnitureName"`
+	SizeX               float64 `json:"sizeX"`
+	SizeY               float64 `json:"sizeY"`
+	SizeZ               float64 `json:"sizeZ"`
+	IsThumbnailUploaded bool    `json:"isThumbnailUploaded"`
+	IsObjectUploaded    bool    `json:"isObjectUploaded"`
 }
 
 type FurnitureUploadLinks struct {
@@ -62,6 +65,9 @@ func (s FurnitureService) PrepareUpload(ctx context.Context, furniture request.N
 
 	uploadStatus := FurnitureUploadStatus{
 		UserId:        furniture.UserId,
+		SizeX:         furniture.SizeX,
+		SizeY:         furniture.SizeY,
+		SizeZ:         furniture.SizeZ,
 		FurnitureName: furniture.Name,
 	}
 
@@ -150,6 +156,9 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 			newFurniture := model.Furniture{
 				UserId:   uploadStatus.UserId,
 				Name:     uploadStatus.FurnitureName,
+				SizeX:    uploadStatus.SizeX,
+				SizeY:    uploadStatus.SizeY,
+				SizeZ:    uploadStatus.SizeZ,
 				FileName: fileId,
 			}
 			err := s.FurnitureRepo.Create(ctx, &newFurniture)
