@@ -42,5 +42,11 @@ func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middlew
 		blueprint.GET("/complete/:id", handler.HandleGetCompleteBlueprintById)
 	}
 
+	profile := e.Group("/profile")
+	profile.Use(authMiddleware.Authenticate)
+	{
+		profile.GET("/furniture/page/:page", handler.HandlerPagePersonalFurniture)
+	}
+
 	e.POST("/minio/upload-hook", handler.HandleUploadNotification)
 }

@@ -106,6 +106,9 @@ func (h Handler) HandleSaveBlueprint(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	if blueprint.Id != blueprintReq.Id {
+		return NewApiError(http.StatusBadRequest, "", app.ErrIdMismatch)
+	}
 
 	if blueprint.UserId == 0 {
 		blueprint, err = h.BpService.CreateBlueprint(ctx, *blueprintReq)
@@ -115,7 +118,7 @@ func (h Handler) HandleSaveBlueprint(c echo.Context) error {
 	}
 
 	if blueprint.UserId != claims.Id {
-		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrCreatorIdMismatch)
+		return NewApiError(http.StatusUnauthorized, UPDATE_BAD_REQUEST, app.ErrCreatorIdMismatch)
 	}
 
 	blueprintReq.Id = blueprint.Id
@@ -142,6 +145,11 @@ func (h Handler) HandleListCompleteBlueprints(c echo.Context) error {
 }
 
 func (h Handler) HandleGetCompleteBlueprintById(c echo.Context) error {
+	claims, ok := c.Get("user_claims").(token.UserClaims)
+	if !ok {
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+	}
+
 	pageStr := c.Param("id")
 	id, err := strconv.Atoi(pageStr)
 	if err != nil {
@@ -149,7 +157,7 @@ func (h Handler) HandleGetCompleteBlueprintById(c echo.Context) error {
 	}
 
 	ctx := context.Background()
-	blueprint, err := h.BpService.GetCompleteBlueprintById(ctx, int64(id))
+	blueprint, err := h.BpService.GetCompleteBlueprintById(ctx, claims.Id, int64(id))
 	if err != nil {
 		return err
 	}

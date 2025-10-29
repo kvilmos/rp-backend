@@ -16,6 +16,7 @@ var (
 	ErrSessionRevoked      = errors.New("session revoked")
 
 	ErrCreatorIdMismatch = errors.New("unauthorized request")
+	ErrIdMismatch        = errors.New("invalid update request")
 
 	ErrMinioNotificationEmpty = errors.New("webhook notification contained no records")
 )

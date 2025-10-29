@@ -4,6 +4,7 @@ import (
 	"context"
 	"room-planner/common/constant"
 	"room-planner/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -13,7 +14,7 @@ type BlueprintRepository interface {
 	List(ctx context.Context) ([]*model.Blueprint, error)
 	Page(ctx context.Context, page int) ([]*model.Blueprint, error)
 	GetById(ctx context.Context, id int64) (*model.Blueprint, error)
-	Update(ctx context.Context, id int64) error
+	Update(ctx context.Context, blueprint *model.Blueprint, id int64) error
 	ListComplete(ctx context.Context) ([]*model.Blueprint, error)
 	GetCompleteById(ctx context.Context, id int64) (*model.Blueprint, error)
 	Count(ctx context.Context) (int, error)
@@ -28,7 +29,7 @@ func NewBlueprintRepository(db *gorm.DB) BlueprintRepository {
 }
 
 func (r *blueprintRepository) Create(ctx context.Context, blueprint *model.Blueprint) error {
-	err := r.db.WithContext(ctx).Omit("id").Create(&blueprint).Error
+	err := r.db.WithContext(ctx).Omit("id", "name").Create(&blueprint).Error
 	return err
 }
 
@@ -62,12 +63,9 @@ func (r *blueprintRepository) List(ctx context.Context) ([]*model.Blueprint, err
 	return blueprints, err
 }
 
-func (r *blueprintRepository) Update(ctx context.Context, id int64) error {
-	var blueprint *model.Blueprint
-	sql := `UPDATE blueprint_t 
-			SET modified_at = NOW()
-			WHERE id = ?`
-	return r.db.Raw(sql, id).Scan(&blueprint).Error
+func (r *blueprintRepository) Update(ctx context.Context, blueprint *model.Blueprint, id int64) error {
+	blueprint.UpdatedAt = time.Now()
+	return r.db.WithContext(ctx).Model(blueprint).Updates(blueprint).Error
 }
 
 func (r *blueprintRepository) ListComplete(ctx context.Context) ([]*model.Blueprint, error) {

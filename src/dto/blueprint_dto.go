@@ -6,21 +6,23 @@ import (
 )
 
 type BlueprintDto struct {
-	Id         int64     `json:"id"`
-	UserId     int64     `json:"userId"`
-	CreatedAt  time.Time `json:"createAt"`
-	ModifiedAt time.Time `json:"modifiedAt"`
+	Id        int64     `json:"id"`
+	UserId    int64     `json:"userId"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type BlueprintCompleteDto struct {
-	Id         int64          `json:"id"`
-	UserId     int64          `json:"userId"`
-	CreatedAt  time.Time      `json:"createAt"`
-	ModifiedAt time.Time      `json:"modifiedAt"`
-	Corners    []CornerDto    `json:"corners"`
-	Walls      []WallDto      `json:"walls"`
-	Items      []ItemDto      `json:"items"`
-	Furniture  []FurnitureDto `json:"furniture"`
+	Id        int64          `json:"id"`
+	UserId    int64          `json:"userId"`
+	Name      string         `json:"name"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	Corners   []CornerDto    `json:"corners"`
+	Walls     []WallDto      `json:"walls"`
+	Items     []ItemDto      `json:"items"`
+	Furniture []FurnitureDto `json:"furniture"`
 }
 
 type BlueprintPageDto struct {
@@ -33,10 +35,11 @@ type BlueprintPageDto struct {
 
 func FromBlueprintModel(bp model.Blueprint) *BlueprintDto {
 	return &BlueprintDto{
-		Id:         bp.Id,
-		UserId:     bp.UserId,
-		CreatedAt:  bp.CreatedAt,
-		ModifiedAt: bp.ModifiedAt,
+		Id:        bp.Id,
+		UserId:    bp.UserId,
+		Name:      bp.Name,
+		CreatedAt: bp.CreatedAt,
+		UpdatedAt: bp.UpdatedAt,
 	}
 }
 
@@ -54,7 +57,9 @@ func FromCompleteBlueprintModel(bp model.Blueprint) *BlueprintCompleteDto {
 	return &BlueprintCompleteDto{
 		Id:        bp.Id,
 		UserId:    bp.UserId,
+		Name:      bp.Name,
 		CreatedAt: bp.CreatedAt,
+		UpdatedAt: bp.UpdatedAt,
 		Corners:   FromCornersModel(bp.Corners),
 		Walls:     FromWallsModel(bp.Walls),
 		Items:     FromItemsModel(bp.Items),

@@ -3,6 +3,7 @@ package request
 type NewBlueprintRequest struct {
 	Id      int64
 	UserId  int64
+	Name    string
 	Corners []NewCornerRequest
 	Walls   []NewWallRequest
 	Items   []NewItemRequest

@@ -27,4 +27,5 @@ const (
 	INVALID_PAYLOAD           = "Invalid JSON payload."
 	INVALID_LOGIN_CREDENTIALS = "invalidLoginCredentials"
 	UNAUTHORIZED_REQUEST      = "Unauthorized request"
+	UPDATE_BAD_REQUEST        = "update data failed"
 )

@@ -5,6 +5,7 @@ import (
 	"room-planner/common/constant"
 	"room-planner/model"
 	"room-planner/request"
+	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -62,23 +63,37 @@ func (r *furnitureRepository) GetById(id int64) (*model.Furniture, error) {
 }
 
 func (r *furnitureRepository) Page(page int, filter request.FurnitureFilter) ([]*model.Furniture, error) {
-	sql := `SELECT * 
-			FROM furniture_t `
+	var sqlBuilder strings.Builder
+	sqlBuilder.WriteString(`SELECT * FROM furniture_t`)
+
+	var params []interface{}
+	var conditions []string
+	if filter.CreatorId != "" {
+		conditions = append(conditions, "user_id LIKE ?")
+		params = append(params, filter.CreatorId)
+	}
+
+	if len(conditions) > 0 {
+		sqlBuilder.WriteString(" WHERE ")
+		sqlBuilder.WriteString(strings.Join(conditions, " AND "))
+	}
 
 	switch filter.SortByDate {
 	case "latest":
-		sql += ` ORDER BY created_at DESC `
+		sqlBuilder.WriteString(" ORDER BY created_at DESC ")
 	case "oldest":
-		sql += ` ORDER BY created_at ASC `
+		sqlBuilder.WriteString(" ORDER BY created_at ASC ")
 	default:
-		sql += ` ORDER BY created_at DESC `
+		sqlBuilder.WriteString(" ORDER BY created_at DESC ")
 	}
 
-	sql += `LIMIT ?
-			OFFSET ?`
+	sqlBuilder.WriteString(" LIMIT ? OFFSET ? ")
+	params = append(params, constant.PAGE_LIMIT)
+	params = append(params, constant.PAGE_LIMIT*(page-1))
 
 	var list []*model.Furniture
-	err := r.db.Raw(sql, constant.PAGE_LIMIT, constant.PAGE_LIMIT*(page-1)).Scan(&list).Error
+	sqlString := sqlBuilder.String()
+	err := r.db.Raw(sqlString, params...).Scan(&list).Error
 
 	return list, err
 }

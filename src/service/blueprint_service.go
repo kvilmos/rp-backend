@@ -55,12 +55,13 @@ func (s BlueprintService) GetBlueprintCount(ctx context.Context) (int, error) {
 }
 
 func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq request.NewBlueprintRequest) (*model.Blueprint, error) {
-	blueprint := model.Blueprint{
+	blueprint := &model.Blueprint{
 		Id:     blueprintReq.Id,
+		Name:   blueprintReq.Name,
 		UserId: blueprintReq.UserId,
 	}
 
-	err := s.BlueprintRepository.Update(ctx, blueprint.Id)
+	err := s.BlueprintRepository.Update(ctx, blueprint, blueprint.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +142,7 @@ func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq reques
 		}
 	}
 
-	return &blueprint, nil
+	return blueprint, nil
 }
 
 func (s BlueprintService) GetCompleteBlueprints(ctx context.Context) ([]*model.Blueprint, error) {
@@ -153,7 +154,7 @@ func (s BlueprintService) GetCompleteBlueprints(ctx context.Context) ([]*model.B
 	return blueprints, err
 }
 
-func (s BlueprintService) GetCompleteBlueprintById(ctx context.Context, id int64) (*model.Blueprint, error) {
+func (s BlueprintService) GetCompleteBlueprintById(ctx context.Context, userId int64, id int64) (*model.Blueprint, error) {
 	blueprint, err := s.BlueprintRepository.GetCompleteById(ctx, id)
 	if err != nil {
 		return nil, err

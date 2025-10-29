@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"net/http"
 	"room-planner/app"
@@ -86,8 +87,79 @@ func (h *Handler) PageFurniture(c echo.Context) error {
 	}
 
 	sortBy := c.QueryParam("sortByCreateAt")
+	creatorId := c.QueryParam("creator")
+
 	filter := request.FurnitureFilter{
 		SortByDate: sortBy,
+		CreatorId:  creatorId,
+	}
+
+	ctx := context.Background()
+	furnitureList, err := h.FurnitureService.PageFurniture(ctx, page, filter)
+	if err != nil {
+		return err
+	}
+
+	var furnitureListDto []dto.FurnitureDto
+	for _, furniture := range furnitureList {
+		furnitureDto := dto.FromFurnitureModel(furniture)
+
+		thumbnailUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.THUMBNAIL_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		objectUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.FURNITURE_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		furnitureDto.ObjectUrl = objectUrl.String()
+		furnitureDto.ThumbnailUrl = thumbnailUrl.String()
+
+		furnitureListDto = append(furnitureListDto, *furnitureDto)
+	}
+
+	var totalRows int
+	totalRows, err = h.FurnitureService.GetFurnitureCount(ctx)
+	if err != nil {
+		return err
+	}
+	totalPages := math.Ceil(float64(totalRows) / constant.PAGE_LIMIT)
+
+	responseDto := dto.FurniturePageDto{
+		NextPage:   page + 1,
+		PrevPage:   page - 1,
+		CurrPage:   page,
+		TotalPages: int(totalPages),
+		List:       furnitureListDto,
+	}
+
+	return response.SendSuccessResponse(c, "furniture page", responseDto)
+}
+
+func (h *Handler) HandlerPagePersonalFurniture(c echo.Context) error {
+	pageStr := c.Param("page")
+	claims, ok := c.Get("user_claims").(token.UserClaims)
+	if !ok {
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+	}
+
+	page := 1
+	if pageStr != "" {
+		newPage, err := strconv.Atoi(pageStr)
+		if err != nil {
+			return err
+		}
+		page = newPage
+	}
+
+	sortBy := c.QueryParam("sortByCreateAt")
+	creator := claims.Id
+
+	filter := request.FurnitureFilter{
+		SortByDate: sortBy,
+		CreatorId:  fmt.Sprint(creator),
 	}
 
 	ctx := context.Background()
