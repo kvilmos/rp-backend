@@ -1,6 +1,6 @@
 package request
 
 type FurnitureFilter struct {
-	SortByDate string
-	CreatorId  string
+	OrderBy   string
+	CreatorId int64
 }

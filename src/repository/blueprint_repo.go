@@ -4,6 +4,8 @@ import (
 	"context"
 	"room-planner/common/constant"
 	"room-planner/model"
+	"room-planner/request"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -13,11 +15,13 @@ type BlueprintRepository interface {
 	Create(ctx context.Context, blueprint *model.Blueprint) error
 	List(ctx context.Context) ([]*model.Blueprint, error)
 	Page(ctx context.Context, page int) ([]*model.Blueprint, error)
+	PageByFilter(ctx context.Context, page int, filter request.BlueprintFilter) ([]*model.Blueprint, error)
 	GetById(ctx context.Context, id int64) (*model.Blueprint, error)
 	Update(ctx context.Context, blueprint *model.Blueprint, id int64) error
 	ListComplete(ctx context.Context) ([]*model.Blueprint, error)
 	GetCompleteById(ctx context.Context, id int64) (*model.Blueprint, error)
 	Count(ctx context.Context) (int, error)
+	CountByUserId(ctx context.Context, id int64) (int, error)
 }
 
 type blueprintRepository struct {
@@ -42,6 +46,39 @@ func (r *blueprintRepository) Page(ctx context.Context, page int) ([]*model.Blue
 	err := r.db.Raw(sql, constant.PAGE_LIMIT, constant.PAGE_LIMIT*(page-1)).Scan(&blueprints).Error
 
 	return blueprints, err
+}
+
+func (r *blueprintRepository) PageByFilter(ctx context.Context, page int, filter request.BlueprintFilter) ([]*model.Blueprint, error) {
+	var sqlBuilder strings.Builder
+	sqlBuilder.WriteString(`SELECT * FROM blueprint_t`)
+	var params []interface{}
+	var conditions []string
+	conditions = append(conditions, "user_id LIKE ?")
+	params = append(params, filter.CreatorId)
+
+	if len(conditions) > 0 {
+		sqlBuilder.WriteString(" WHERE ")
+		sqlBuilder.WriteString(strings.Join(conditions, " AND "))
+	}
+
+	switch filter.OrderBy {
+	case "latest":
+		sqlBuilder.WriteString(" ORDER BY created_at DESC ")
+	case "oldest":
+		sqlBuilder.WriteString(" ORDER BY created_at ASC ")
+	default:
+		sqlBuilder.WriteString(" ORDER BY created_at DESC ")
+	}
+
+	sqlBuilder.WriteString(" LIMIT ? OFFSET ? ")
+	params = append(params, constant.PAGE_LIMIT)
+	params = append(params, constant.PAGE_LIMIT*(page-1))
+
+	var list []*model.Blueprint
+	sqlString := sqlBuilder.String()
+	err := r.db.Raw(sqlString, params...).Scan(&list).Error
+
+	return list, err
 }
 
 func (r *blueprintRepository) GetById(ctx context.Context, id int64) (*model.Blueprint, error) {
@@ -87,6 +124,16 @@ func (r *blueprintRepository) Count(ctx context.Context) (int, error) {
 	sql := `SELECT COUNT(1) 
 			FROM blueprint_t`
 	err := r.db.Raw(sql).Scan(&count).Error
+
+	return count, err
+}
+
+func (r *blueprintRepository) CountByUserId(ctx context.Context, id int64) (int, error) {
+	var count int
+	sql := `SELECT COUNT(1) 
+			FROM blueprint_t
+			WHERE user_id = ?`
+	err := r.db.Raw(sql, id).Scan(&count).Error
 
 	return count, err
 }

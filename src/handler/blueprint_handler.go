@@ -191,3 +191,64 @@ func (h Handler) HandleGetCompleteBlueprintById(c echo.Context) error {
 
 	return response.SendSuccessResponse(c, "Complete Blueprint ", blueprintDto)
 }
+
+func (h Handler) HandlerPageUserBlueprint(c echo.Context) error {
+	claims, ok := c.Get("user_claims").(token.UserClaims)
+	if !ok {
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+	}
+
+	userIdStr := c.Param("userId")
+	userId := int64(0)
+	if userIdStr != "" {
+		userIdInt, err := strconv.Atoi(userIdStr)
+		if err != nil {
+			return err
+		}
+		userId = int64(userIdInt)
+	}
+
+	if claims.Id != userId {
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+	}
+
+	orderBy := c.QueryParam("orderBy")
+
+	filter := request.BlueprintFilter{
+		OrderBy:   orderBy,
+		CreatorId: claims.Id,
+	}
+
+	pageStr := c.Param("page")
+	page := 1
+	if pageStr != "" {
+		newPage, err := strconv.Atoi(pageStr)
+		if err != nil {
+			return err
+		}
+		page = newPage
+	}
+
+	ctx := context.Background()
+	blueprints, err := h.BpService.GetBlueprintsByFilter(ctx, page, filter)
+	if err != nil {
+		return err
+	}
+
+	var totalRows int
+	totalRows, err = h.BpService.GetUserBlueprintCount(ctx, claims.Id)
+	if err != nil {
+		return err
+	}
+	totalPages := math.Ceil(float64(totalRows) / constant.PAGE_LIMIT)
+
+	pageDto := dto.BlueprintPageDto{
+		NextPage:   page + 1,
+		PrevPage:   page - 1,
+		CurrPage:   page,
+		TotalPages: int(totalPages),
+		List:       dto.FromBlueprintsModel(blueprints),
+	}
+
+	return response.SendSuccessResponse(c, "All Complete blueprints listed", pageDto)
+}

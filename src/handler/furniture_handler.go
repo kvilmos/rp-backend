@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"net/http"
 	"room-planner/app"
@@ -86,12 +85,21 @@ func (h *Handler) PageFurniture(c echo.Context) error {
 		page = newPage
 	}
 
-	sortBy := c.QueryParam("sortByCreateAt")
-	creatorId := c.QueryParam("creator")
+	orderBy := c.QueryParam("orderBy")
+	creatorIdStr := c.QueryParam("creator")
+
+	creatorId := int64(0)
+	if creatorIdStr != "" {
+		IdInt, err := strconv.Atoi(creatorIdStr)
+		if err != nil {
+			return err
+		}
+		creatorId = int64(IdInt)
+	}
 
 	filter := request.FurnitureFilter{
-		SortByDate: sortBy,
-		CreatorId:  creatorId,
+		OrderBy:   orderBy,
+		CreatorId: creatorId,
 	}
 
 	ctx := context.Background()
@@ -138,13 +146,27 @@ func (h *Handler) PageFurniture(c echo.Context) error {
 	return response.SendSuccessResponse(c, "furniture page", responseDto)
 }
 
-func (h *Handler) HandlerPagePersonalFurniture(c echo.Context) error {
-	pageStr := c.Param("page")
+func (h *Handler) HandlerPageUserFurniture(c echo.Context) error {
 	claims, ok := c.Get("user_claims").(token.UserClaims)
 	if !ok {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
 	}
 
+	userIdStr := c.Param("userId")
+	userId := int64(0)
+	if userIdStr != "" {
+		userIdInt, err := strconv.Atoi(userIdStr)
+		if err != nil {
+			return err
+		}
+		userId = int64(userIdInt)
+	}
+
+	if claims.Id != userId {
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+	}
+
+	pageStr := c.Param("page")
 	page := 1
 	if pageStr != "" {
 		newPage, err := strconv.Atoi(pageStr)
@@ -154,12 +176,10 @@ func (h *Handler) HandlerPagePersonalFurniture(c echo.Context) error {
 		page = newPage
 	}
 
-	sortBy := c.QueryParam("sortByCreateAt")
-	creator := claims.Id
-
+	orderBy := c.QueryParam("orderBy")
 	filter := request.FurnitureFilter{
-		SortByDate: sortBy,
-		CreatorId:  fmt.Sprint(creator),
+		OrderBy:   orderBy,
+		CreatorId: claims.Id,
 	}
 
 	ctx := context.Background()

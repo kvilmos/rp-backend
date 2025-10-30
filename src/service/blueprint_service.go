@@ -54,6 +54,10 @@ func (s BlueprintService) GetBlueprintCount(ctx context.Context) (int, error) {
 	return s.BlueprintRepository.Count(ctx)
 }
 
+func (s BlueprintService) GetUserBlueprintCount(ctx context.Context, id int64) (int, error) {
+	return s.BlueprintRepository.CountByUserId(ctx, id)
+}
+
 func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq request.NewBlueprintRequest) (*model.Blueprint, error) {
 	blueprint := &model.Blueprint{
 		Id:     blueprintReq.Id,
@@ -147,6 +151,15 @@ func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq reques
 
 func (s BlueprintService) GetCompleteBlueprints(ctx context.Context) ([]*model.Blueprint, error) {
 	blueprints, err := s.BlueprintRepository.ListComplete(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return blueprints, err
+}
+
+func (s BlueprintService) GetBlueprintsByFilter(ctx context.Context, page int, filter request.BlueprintFilter) ([]*model.Blueprint, error) {
+	blueprints, err := s.BlueprintRepository.PageByFilter(ctx, page, filter)
 	if err != nil {
 		return nil, err
 	}

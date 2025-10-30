@@ -1,5 +1,6 @@
 package request
 
 type BlueprintFilter struct {
-	SortByDate string
+	OrderBy   string
+	CreatorId int64
 }

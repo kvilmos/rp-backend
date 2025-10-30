@@ -68,7 +68,7 @@ func (r *furnitureRepository) Page(page int, filter request.FurnitureFilter) ([]
 
 	var params []interface{}
 	var conditions []string
-	if filter.CreatorId != "" {
+	if filter.CreatorId != 0 {
 		conditions = append(conditions, "user_id LIKE ?")
 		params = append(params, filter.CreatorId)
 	}
@@ -78,7 +78,7 @@ func (r *furnitureRepository) Page(page int, filter request.FurnitureFilter) ([]
 		sqlBuilder.WriteString(strings.Join(conditions, " AND "))
 	}
 
-	switch filter.SortByDate {
+	switch filter.OrderBy {
 	case "latest":
 		sqlBuilder.WriteString(" ORDER BY created_at DESC ")
 	case "oldest":
