@@ -27,3 +27,7 @@ type FurnitureUploadStatus struct {
 	IsThumbnailUploaded bool
 	IsObjectUploaded    bool
 }
+type FurnitureWithTotal struct {
+	Furniture Furniture `gorm:"embedded"`
+	TotalRows int
+}

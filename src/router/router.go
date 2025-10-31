@@ -25,28 +25,24 @@ func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middlew
 	furniture := e.Group("/furniture")
 	furniture.Use(authMiddleware.Authenticate)
 	{
-		furniture.POST("", handler.NewFurniture)
-		furniture.GET("", handler.ListFurniture)
-		furniture.GET("/page/:page", handler.PageFurniture)
-		furniture.GET("/:id", handler.GetFurnitureById)
+		furniture.POST("", handler.HandleNewFurniture)
+		furniture.GET("", handler.HandleGetFurnitureList)
+		furniture.GET("/:id", handler.HandleGetFurnitureById)
 	}
 
 	blueprint := e.Group("/blueprint")
 	blueprint.Use(authMiddleware.Authenticate)
 	{
 		blueprint.POST("", handler.HandleCreateBlueprint)
-		blueprint.GET("", handler.HandleListBlueprints)
 		blueprint.PUT("/:id", handler.HandleSaveBlueprint)
-		blueprint.GET("/page/:page", handler.HandlePageBlueprints)
-		blueprint.GET("/complete", handler.HandleListCompleteBlueprints)
 		blueprint.GET("/complete/:id", handler.HandleGetCompleteBlueprintById)
 	}
 
-	profile := e.Group("/user/:userId")
+	profile := e.Group("/profile")
 	profile.Use(authMiddleware.Authenticate)
 	{
-		profile.GET("/furniture/page/:page", handler.HandlerPageUserFurniture)
-		profile.GET("/blueprint/page/:page", handler.HandlerPageUserBlueprint)
+		profile.GET("/furniture", handler.HandlerGetProfileFurniture)
+		profile.GET("/blueprint", handler.HandlerGetProfileBlueprints)
 	}
 
 	e.POST("/minio/upload-hook", handler.HandleUploadNotification)

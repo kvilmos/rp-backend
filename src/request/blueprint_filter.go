@@ -1,6 +1,7 @@
 package request
 
 type BlueprintFilter struct {
-	OrderBy   string
+	Page      int
+	Order     string
 	CreatorId int64
 }

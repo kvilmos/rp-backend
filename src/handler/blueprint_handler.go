@@ -33,53 +33,6 @@ func (h Handler) HandleCreateBlueprint(c echo.Context) error {
 	return response.SendSuccessResponse(c, "Blueprint created", bpDto)
 }
 
-func (h Handler) HandleListBlueprints(c echo.Context) error {
-	ctx := context.Background()
-	blueprints, err := h.BpService.ListBlueprints(ctx)
-	if err != nil {
-		return err
-	}
-	blueprintsDto := dto.FromBlueprintsModel(blueprints)
-
-	return response.SendSuccessResponse(c, "All Blueprints listed", blueprintsDto)
-}
-
-func (h Handler) HandlePageBlueprints(c echo.Context) error {
-	pageStr := c.Param("page")
-
-	page := 1
-	if pageStr != "" {
-		newPage, err := strconv.Atoi(pageStr)
-		if err != nil {
-			return err
-		}
-		page = newPage
-	}
-
-	ctx := context.Background()
-	blueprints, err := h.BpService.PageBlueprints(ctx, page)
-	if err != nil {
-		return err
-	}
-
-	var totalRows int
-	totalRows, err = h.BpService.GetBlueprintCount(ctx)
-	if err != nil {
-		return err
-	}
-	totalPages := math.Ceil(float64(totalRows) / constant.PAGE_LIMIT)
-
-	pageDto := dto.BlueprintPageDto{
-		NextPage:   page + 1,
-		PrevPage:   page - 1,
-		CurrPage:   page,
-		TotalPages: int(totalPages),
-		List:       dto.FromBlueprintsModel(blueprints),
-	}
-
-	return response.SendSuccessResponse(c, "Blueprint paged", pageDto)
-}
-
 func (h Handler) HandleSaveBlueprint(c echo.Context) error {
 	claims, ok := c.Get("user_claims").(token.UserClaims)
 	if !ok {
@@ -133,17 +86,6 @@ func (h Handler) HandleSaveBlueprint(c echo.Context) error {
 	return response.SendSuccessResponse(c, "Blueprint saved", bpDto)
 }
 
-func (h Handler) HandleListCompleteBlueprints(c echo.Context) error {
-	ctx := context.Background()
-	blueprints, err := h.BpService.GetCompleteBlueprints(ctx)
-	if err != nil {
-		return err
-	}
-	blueprintsDto := dto.FromCompleteBlueprintsModel(blueprints)
-
-	return response.SendSuccessResponse(c, "All Complete blueprints listed", blueprintsDto)
-}
-
 func (h Handler) HandleGetCompleteBlueprintById(c echo.Context) error {
 	claims, ok := c.Get("user_claims").(token.UserClaims)
 	if !ok {
@@ -192,63 +134,43 @@ func (h Handler) HandleGetCompleteBlueprintById(c echo.Context) error {
 	return response.SendSuccessResponse(c, "Complete Blueprint ", blueprintDto)
 }
 
-func (h Handler) HandlerPageUserBlueprint(c echo.Context) error {
+func (h Handler) HandlerGetProfileBlueprints(c echo.Context) error {
 	claims, ok := c.Get("user_claims").(token.UserClaims)
 	if !ok {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
 	}
 
-	userIdStr := c.Param("userId")
-	userId := int64(0)
-	if userIdStr != "" {
-		userIdInt, err := strconv.Atoi(userIdStr)
-		if err != nil {
-			return err
-		}
-		userId = int64(userIdInt)
+	pageStr := c.QueryParam(string(constant.PAGE))
+	if pageStr == "" {
+		pageStr = "1"
 	}
-
-	if claims.Id != userId {
-		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 1
 	}
-
-	orderBy := c.QueryParam("orderBy")
-
+	order := c.QueryParam(string(constant.ORDER))
+	if order == "" {
+		order = string(constant.RECENTLY_MODIFIED)
+	}
 	filter := request.BlueprintFilter{
-		OrderBy:   orderBy,
 		CreatorId: claims.Id,
+		Page:      page,
+		Order:     order,
 	}
 
-	pageStr := c.Param("page")
-	page := 1
-	if pageStr != "" {
-		newPage, err := strconv.Atoi(pageStr)
-		if err != nil {
-			return err
-		}
-		page = newPage
-	}
-
-	ctx := context.Background()
-	blueprints, err := h.BpService.GetBlueprintsByFilter(ctx, page, filter)
+	ctx := c.Request().Context()
+	blueprints, totalRows, err := h.BpService.PageForUser(ctx, filter)
 	if err != nil {
-		return err
-	}
-
-	var totalRows int
-	totalRows, err = h.BpService.GetUserBlueprintCount(ctx, claims.Id)
-	if err != nil {
-		return err
+		return NewApiError(http.StatusInternalServerError, ERROR_RETRIEVING_USER_BLUEPRINTS, err)
 	}
 	totalPages := math.Ceil(float64(totalRows) / constant.PAGE_LIMIT)
+	bpDto := dto.FromBlueprintModels(blueprints)
 
 	pageDto := dto.BlueprintPageDto{
-		NextPage:   page + 1,
-		PrevPage:   page - 1,
 		CurrPage:   page,
 		TotalPages: int(totalPages),
-		List:       dto.FromBlueprintsModel(blueprints),
+		List:       bpDto,
 	}
 
-	return response.SendSuccessResponse(c, "All Complete blueprints listed", pageDto)
+	return response.SendSuccessResponse(c, app.USER_BLUEPRINTS_RETRIEVED, pageDto)
 }

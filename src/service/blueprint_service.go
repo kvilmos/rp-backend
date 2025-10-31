@@ -38,24 +38,12 @@ func (s BlueprintService) CreateBlueprint(ctx context.Context, blueprintReq requ
 	return &blueprint, nil
 }
 
-func (s BlueprintService) ListBlueprints(ctx context.Context) ([]*model.Blueprint, error) {
-	return s.BlueprintRepository.List(ctx)
+func (s BlueprintService) PageForUser(ctx context.Context, filter request.BlueprintFilter) ([]*model.Blueprint, int, error) {
+	return s.BlueprintRepository.Page(ctx, filter)
 }
 
 func (s BlueprintService) GetBlueprintById(ctx context.Context, id int64) (*model.Blueprint, error) {
 	return s.BlueprintRepository.GetById(ctx, id)
-}
-
-func (s BlueprintService) PageBlueprints(ctx context.Context, page int) ([]*model.Blueprint, error) {
-	return s.BlueprintRepository.Page(ctx, page)
-}
-
-func (s BlueprintService) GetBlueprintCount(ctx context.Context) (int, error) {
-	return s.BlueprintRepository.Count(ctx)
-}
-
-func (s BlueprintService) GetUserBlueprintCount(ctx context.Context, id int64) (int, error) {
-	return s.BlueprintRepository.CountByUserId(ctx, id)
 }
 
 func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq request.NewBlueprintRequest) (*model.Blueprint, error) {
@@ -147,24 +135,6 @@ func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq reques
 	}
 
 	return blueprint, nil
-}
-
-func (s BlueprintService) GetCompleteBlueprints(ctx context.Context) ([]*model.Blueprint, error) {
-	blueprints, err := s.BlueprintRepository.ListComplete(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return blueprints, err
-}
-
-func (s BlueprintService) GetBlueprintsByFilter(ctx context.Context, page int, filter request.BlueprintFilter) ([]*model.Blueprint, error) {
-	blueprints, err := s.BlueprintRepository.PageByFilter(ctx, page, filter)
-	if err != nil {
-		return nil, err
-	}
-
-	return blueprints, err
 }
 
 func (s BlueprintService) GetCompleteBlueprintById(ctx context.Context, userId int64, id int64) (*model.Blueprint, error) {

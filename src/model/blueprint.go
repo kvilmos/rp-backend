@@ -18,3 +18,8 @@ type Blueprint struct {
 func (Blueprint) TableName() string {
 	return "blueprint_t"
 }
+
+type BlueprintWithTotal struct {
+	Blueprint Blueprint `gorm:"embedded"`
+	TotalRows int
+}

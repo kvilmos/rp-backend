@@ -143,7 +143,7 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 			return err
 		}
 
-		exists, err := s.FurnitureRepo.IsExistByFileId(fileId)
+		exists, err := s.FurnitureRepo.IsExistByFileId(ctx, fileId)
 		if err != nil {
 			// RETRY DB INSERT
 			// TODO STORY-201 ERROR HANDLER
@@ -190,19 +190,11 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 }
 
 func (s FurnitureService) GetFurnitureById(ctx context.Context, id int64) (*model.Furniture, error) {
-	return s.FurnitureRepo.GetById(id)
+	return s.FurnitureRepo.GetById(ctx, id)
 }
 
-func (s FurnitureService) ListFurniture(ctx context.Context) ([]*model.Furniture, error) {
-	return s.FurnitureRepo.List()
-}
-
-func (s FurnitureService) PageFurniture(ctx context.Context, page int, filter request.FurnitureFilter) ([]*model.Furniture, error) {
-	return s.FurnitureRepo.Page(page, filter)
-}
-
-func (s FurnitureService) GetFurnitureCount(ctx context.Context) (int, error) {
-	return s.FurnitureRepo.Count()
+func (s FurnitureService) PageForUser(ctx context.Context, filter request.FurnitureFilter) ([]*model.Furniture, int, error) {
+	return s.FurnitureRepo.Page(ctx, filter)
 }
 
 func (s FurnitureService) GetFurnitureFileUrl(ctx context.Context, fileName uuid.UUID, bucker string) (*url.URL, error) {

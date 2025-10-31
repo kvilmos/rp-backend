@@ -26,8 +26,6 @@ type BlueprintCompleteDto struct {
 }
 
 type BlueprintPageDto struct {
-	NextPage   int            `json:"nextPage"`
-	PrevPage   int            `json:"prevPage"`
 	CurrPage   int            `json:"currPage"`
 	TotalPages int            `json:"totalPages"`
 	List       []BlueprintDto `json:"blueprints"`
@@ -43,7 +41,7 @@ func FromBlueprintModel(bp model.Blueprint) *BlueprintDto {
 	}
 }
 
-func FromBlueprintsModel(blueprints []*model.Blueprint) []BlueprintDto {
+func FromBlueprintModels(blueprints []*model.Blueprint) []BlueprintDto {
 	var blueprintsDto []BlueprintDto
 	for _, bp := range blueprints {
 		dto := FromBlueprintModel(*bp)
@@ -66,7 +64,7 @@ func FromCompleteBlueprintModel(bp model.Blueprint) *BlueprintCompleteDto {
 	}
 }
 
-func FromCompleteBlueprintsModel(blueprints []*model.Blueprint) []BlueprintCompleteDto {
+func FromCompleteBlueprintModels(blueprints []*model.Blueprint) []BlueprintCompleteDto {
 	var blueprintsDto []BlueprintCompleteDto
 	for _, bp := range blueprints {
 		dto := FromCompleteBlueprintModel(*bp)

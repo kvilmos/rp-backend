@@ -23,9 +23,13 @@ func NewApiError(status int, msg any, err error) ApiError {
 }
 
 const (
+	UNAUTHORIZED_REQUEST = "Unauthorized request"
+
+	ERROR_RETRIEVING_USER_BLUEPRINTS     = "Error retrieving user blueprints"
+	ERROR_RETRIEVING_USER_FURNITURE_LIST = "Error retrieving user furniture list"
+
 	EMAIL_ALREADY_EXIST       = "The email address has already been taken."
 	INVALID_PAYLOAD           = "Invalid JSON payload."
 	INVALID_LOGIN_CREDENTIALS = "invalidLoginCredentials"
-	UNAUTHORIZED_REQUEST      = "Unauthorized request"
 	UPDATE_BAD_REQUEST        = "update data failed"
 )
