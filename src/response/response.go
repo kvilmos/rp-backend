@@ -24,7 +24,12 @@ type JSONErrorResponse struct {
 }
 
 func SendSuccessResponse(c echo.Context, message string, data interface{}) error {
-	return c.JSON(http.StatusOK, JSONSuccessResponse{
+	status := http.StatusOK
+	if data == nil {
+		status = http.StatusNoContent
+	}
+
+	return c.JSON(status, JSONSuccessResponse{
 		Success: true,
 		Message: message,
 		Data:    data,

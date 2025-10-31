@@ -145,3 +145,7 @@ func (s BlueprintService) GetCompleteBlueprintById(ctx context.Context, userId i
 
 	return blueprint, err
 }
+
+func (s BlueprintService) DeleteUserBlueprint(ctx context.Context, userId int64, blueprintId int64) error {
+	return s.BlueprintRepository.DeleteForUser(ctx, userId, blueprintId)
+}

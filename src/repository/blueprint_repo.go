@@ -18,6 +18,7 @@ type BlueprintRepository interface {
 	GetById(ctx context.Context, id int64) (*model.Blueprint, error)
 	Update(ctx context.Context, blueprint *model.Blueprint, id int64) error
 	GetCompleteById(ctx context.Context, id int64) (*model.Blueprint, error)
+	DeleteForUser(ctx context.Context, blueprintId int64, userId int64) error
 }
 
 type blueprintRepository struct {
@@ -99,4 +100,22 @@ func (r *blueprintRepository) GetCompleteById(ctx context.Context, id int64) (*m
 	err := r.db.Where("id = ?", id).Preload("Corners").Preload("Items.Furniture").Preload("Walls").Find(&blueprint).Error
 
 	return blueprint, err
+}
+
+func (r *blueprintRepository) DeleteForUser(ctx context.Context, userId int64, blueprintId int64) error {
+	sql := `DELETE FROM blueprint_t
+			WHERE id  = ?
+			AND user_id = ?`
+
+	result := r.db.WithContext(ctx).Exec(sql, blueprintId, userId)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }

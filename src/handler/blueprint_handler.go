@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"math"
 	"net/http"
 	"room-planner/app"
@@ -13,6 +14,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 func (h Handler) HandleCreateBlueprint(c echo.Context) error {
@@ -173,4 +175,28 @@ func (h Handler) HandlerGetProfileBlueprints(c echo.Context) error {
 	}
 
 	return response.SendSuccessResponse(c, app.USER_BLUEPRINTS_RETRIEVED, pageDto)
+}
+
+func (h Handler) HandlerDeleteBlueprint(c echo.Context) error {
+	claims, ok := c.Get("user_claims").(token.UserClaims)
+	if !ok {
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+	}
+	userId := claims.Id
+
+	idStr := c.Param("id")
+	blueprintId, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return NewApiError(http.StatusBadRequest, INVALID_BLUEPRINT_ID, err)
+	}
+
+	serviceErr := h.BpService.DeleteUserBlueprint(c.Request().Context(), userId, blueprintId)
+	if serviceErr != nil {
+		if errors.Is(serviceErr, gorm.ErrRecordNotFound) {
+			return NewApiError(http.StatusNotFound, BLUEPRINT_NOT_ACCESSED, serviceErr)
+		}
+		return NewApiError(http.StatusInternalServerError, ERROR_DELETING_USER_BLUEPRINT, serviceErr)
+	}
+
+	return response.SendSuccessResponse(c, app.USER_BLUEPRINT_DELETED, nil)
 }
