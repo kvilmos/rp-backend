@@ -15,7 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (h *Handler) NewFurniture(c echo.Context) error {
+func (h *Handler) HandleNewFurniture(c echo.Context) error {
 	claims, ok := c.Get("user_claims").(token.UserClaims)
 	if !ok {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
@@ -43,98 +43,121 @@ func (h *Handler) NewFurniture(c echo.Context) error {
 	return response.SendSuccessResponse(c, "Successful url request", urls)
 }
 
-func (h *Handler) ListFurniture(c echo.Context) error {
-	ctx := context.Background()
-	furnitureList, err := h.FurnitureService.ListFurniture(ctx)
+func (h *Handler) HandleGetFurnitureList(c echo.Context) error {
+	pageStr := c.QueryParam(string(constant.PAGE))
+	if pageStr == "" {
+		pageStr = "1"
+	}
+	page, err := strconv.Atoi(pageStr)
 	if err != nil {
-		return err
+		page = 1
 	}
-
-	var furnitureListDto []dto.FurnitureDto
-	for _, furniture := range furnitureList {
-		furnitureDto := dto.FromFurnitureModel(furniture)
-
-		thumbnailUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.THUMBNAIL_BUCKET)
-		if err != nil {
-			return err
-		}
-
-		objectUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.FURNITURE_BUCKET)
-		if err != nil {
-			return err
-		}
-
-		furnitureDto.ObjectUrl = objectUrl.String()
-		furnitureDto.ThumbnailUrl = thumbnailUrl.String()
-
-		furnitureListDto = append(furnitureListDto, *furnitureDto)
+	order := c.QueryParam(string(constant.ORDER))
+	if order == "" {
+		order = string(constant.RECENTLY_MODIFIED)
 	}
-
-	return response.SendSuccessResponse(c, "furniture list", furnitureListDto)
-}
-
-func (h *Handler) PageFurniture(c echo.Context) error {
-	pageStr := c.Param("page")
-
-	page := 1
-	if pageStr != "" {
-		newPage, err := strconv.Atoi(pageStr)
-		if err != nil {
-			return err
-		}
-		page = newPage
-	}
-
-	sortBy := c.QueryParam("sortByCreateAt")
 	filter := request.FurnitureFilter{
-		SortByDate: sortBy,
+		Page:  page,
+		Order: order,
 	}
 
-	ctx := context.Background()
-	furnitureList, err := h.FurnitureService.PageFurniture(ctx, page, filter)
+	ctx := c.Request().Context()
+	furnitureList, totalRows, err := h.FurnitureService.PageForUser(ctx, filter)
 	if err != nil {
-		return err
-	}
-
-	var furnitureListDto []dto.FurnitureDto
-	for _, furniture := range furnitureList {
-		furnitureDto := dto.FromFurnitureModel(furniture)
-
-		thumbnailUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.THUMBNAIL_BUCKET)
-		if err != nil {
-			return err
-		}
-
-		objectUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.FURNITURE_BUCKET)
-		if err != nil {
-			return err
-		}
-
-		furnitureDto.ObjectUrl = objectUrl.String()
-		furnitureDto.ThumbnailUrl = thumbnailUrl.String()
-
-		furnitureListDto = append(furnitureListDto, *furnitureDto)
-	}
-
-	var totalRows int
-	totalRows, err = h.FurnitureService.GetFurnitureCount(ctx)
-	if err != nil {
-		return err
+		return NewApiError(http.StatusInternalServerError, ERROR_RETRIEVING_USER_FURNITURE_LIST, err)
 	}
 	totalPages := math.Ceil(float64(totalRows) / constant.PAGE_LIMIT)
 
-	responseDto := dto.FurniturePaginationDto{
-		NextPage:   page + 1,
-		PrevPage:   page - 1,
+	var furnitureListDto []dto.FurnitureDto
+	for _, furniture := range furnitureList {
+		furnitureDto := dto.FromFurnitureModel(furniture)
+
+		thumbnailUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.THUMBNAIL_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		objectUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.FURNITURE_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		furnitureDto.ObjectUrl = objectUrl.String()
+		furnitureDto.ThumbnailUrl = thumbnailUrl.String()
+
+		furnitureListDto = append(furnitureListDto, *furnitureDto)
+	}
+
+	responseDto := dto.FurniturePageDto{
 		CurrPage:   page,
 		TotalPages: int(totalPages),
 		List:       furnitureListDto,
 	}
 
-	return response.SendSuccessResponse(c, "furniture page", responseDto)
+	return response.SendSuccessResponse(c, app.USER_FURNITURE_LIST_RETRIEVED, responseDto)
 }
 
-func (h *Handler) GetFurnitureById(c echo.Context) error {
+func (h *Handler) HandlerGetProfileFurniture(c echo.Context) error {
+	claims, ok := c.Get("user_claims").(token.UserClaims)
+	if !ok {
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+	}
+
+	pageStr := c.QueryParam(string(constant.PAGE))
+	if pageStr == "" {
+		pageStr = "1"
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 1
+	}
+	order := c.QueryParam(string(constant.ORDER))
+	if order == "" {
+		order = string(constant.RECENTLY_MODIFIED)
+	}
+	filter := request.FurnitureFilter{
+		Page:      page,
+		Order:     order,
+		CreatorId: claims.Id,
+	}
+
+	ctx := c.Request().Context()
+	furnitureList, totalRows, err := h.FurnitureService.PageForUser(ctx, filter)
+	if err != nil {
+		return NewApiError(http.StatusInternalServerError, ERROR_RETRIEVING_USER_FURNITURE_LIST, err)
+	}
+	totalPages := math.Ceil(float64(totalRows) / constant.PAGE_LIMIT)
+
+	var furnitureListDto []dto.FurnitureDto
+	for _, furniture := range furnitureList {
+		furnitureDto := dto.FromFurnitureModel(furniture)
+
+		thumbnailUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.THUMBNAIL_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		objectUrl, err := h.FurnitureService.GetFurnitureFileUrl(ctx, furniture.FileName, constant.FURNITURE_BUCKET)
+		if err != nil {
+			return err
+		}
+
+		furnitureDto.ObjectUrl = objectUrl.String()
+		furnitureDto.ThumbnailUrl = thumbnailUrl.String()
+
+		furnitureListDto = append(furnitureListDto, *furnitureDto)
+	}
+
+	responseDto := dto.FurniturePageDto{
+		CurrPage:   page,
+		TotalPages: int(totalPages),
+		List:       furnitureListDto,
+	}
+
+	return response.SendSuccessResponse(c, app.USER_FURNITURE_LIST_RETRIEVED, responseDto)
+}
+
+func (h *Handler) HandleGetFurnitureById(c echo.Context) error {
 	pageStr := c.Param("id")
 	id, err := strconv.Atoi(pageStr)
 	if err != nil {

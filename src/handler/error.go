@@ -23,8 +23,17 @@ func NewApiError(status int, msg any, err error) ApiError {
 }
 
 const (
+	UNAUTHORIZED_REQUEST = "Unauthorized request"
+	INVALID_PAYLOAD      = "Invalid JSON payload."
+	UPDATE_BAD_REQUEST   = "update data failed"
+
 	EMAIL_ALREADY_EXIST       = "The email address has already been taken."
-	INVALID_PAYLOAD           = "Invalid JSON payload."
 	INVALID_LOGIN_CREDENTIALS = "invalidLoginCredentials"
-	UNAUTHORIZED_REQUEST      = "Unauthorized request"
+
+	ERROR_RETRIEVING_USER_FURNITURE_LIST = "Error retrieving user furniture list"
+
+	ERROR_RETRIEVING_USER_BLUEPRINTS = "Error retrieving user blueprints"
+	INVALID_BLUEPRINT_ID             = "Invalid Blueprint ID"
+	BLUEPRINT_NOT_ACCESSED           = "Blueprint not found or access denied"
+	ERROR_DELETING_USER_BLUEPRINT    = "Failed to delete blueprint"
 )

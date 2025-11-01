@@ -32,10 +32,13 @@ func NewFurnitureService(fr repository.FurnitureRepository, fs repository.FileSt
 }
 
 type FurnitureUploadStatus struct {
-	UserId              int64  `json:"userId"`
-	FurnitureName       string `json:"furnitureName"`
-	IsThumbnailUploaded bool   `json:"isThumbnailUploaded"`
-	IsObjectUploaded    bool   `json:"isObjectUploaded"`
+	UserId              int64   `json:"userId"`
+	FurnitureName       string  `json:"furnitureName"`
+	SizeX               float64 `json:"sizeX"`
+	SizeY               float64 `json:"sizeY"`
+	SizeZ               float64 `json:"sizeZ"`
+	IsThumbnailUploaded bool    `json:"isThumbnailUploaded"`
+	IsObjectUploaded    bool    `json:"isObjectUploaded"`
 }
 
 type FurnitureUploadLinks struct {
@@ -62,6 +65,9 @@ func (s FurnitureService) PrepareUpload(ctx context.Context, furniture request.N
 
 	uploadStatus := FurnitureUploadStatus{
 		UserId:        furniture.UserId,
+		SizeX:         furniture.SizeX,
+		SizeY:         furniture.SizeY,
+		SizeZ:         furniture.SizeZ,
 		FurnitureName: furniture.Name,
 	}
 
@@ -137,7 +143,7 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 			return err
 		}
 
-		exists, err := s.FurnitureRepo.IsExistByFileId(fileId)
+		exists, err := s.FurnitureRepo.IsExistByFileId(ctx, fileId)
 		if err != nil {
 			// RETRY DB INSERT
 			// TODO STORY-201 ERROR HANDLER
@@ -150,6 +156,9 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 			newFurniture := model.Furniture{
 				UserId:   uploadStatus.UserId,
 				Name:     uploadStatus.FurnitureName,
+				SizeX:    uploadStatus.SizeX,
+				SizeY:    uploadStatus.SizeY,
+				SizeZ:    uploadStatus.SizeZ,
 				FileName: fileId,
 			}
 			err := s.FurnitureRepo.Create(ctx, &newFurniture)
@@ -181,19 +190,11 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 }
 
 func (s FurnitureService) GetFurnitureById(ctx context.Context, id int64) (*model.Furniture, error) {
-	return s.FurnitureRepo.GetById(id)
+	return s.FurnitureRepo.GetById(ctx, id)
 }
 
-func (s FurnitureService) ListFurniture(ctx context.Context) ([]*model.Furniture, error) {
-	return s.FurnitureRepo.List()
-}
-
-func (s FurnitureService) PageFurniture(ctx context.Context, page int, filter request.FurnitureFilter) ([]*model.Furniture, error) {
-	return s.FurnitureRepo.Page(page, filter)
-}
-
-func (s FurnitureService) GetFurnitureCount(ctx context.Context) (int, error) {
-	return s.FurnitureRepo.Count()
+func (s FurnitureService) PageForUser(ctx context.Context, filter request.FurnitureFilter) ([]*model.Furniture, int, error) {
+	return s.FurnitureRepo.Page(ctx, filter)
 }
 
 func (s FurnitureService) GetFurnitureFileUrl(ctx context.Context, fileName uuid.UUID, bucker string) (*url.URL, error) {

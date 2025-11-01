@@ -73,7 +73,7 @@ func (h Handler) HandlerLoginUser(c echo.Context) error {
 	}
 	c.SetCookie(cookie)
 
-	return response.SendSuccessResponse(c, "User logged in", dto.LoginDTO{
+	return response.SendSuccessResponse(c, "User logged in", dto.LoginDto{
 		AccessToken: *accessToken,
 		User:        *dto.FromUserModel(user),
 	})

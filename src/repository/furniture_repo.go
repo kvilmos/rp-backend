@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"room-planner/common/constant"
 	"room-planner/model"
 	"room-planner/request"
+	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -12,11 +14,9 @@ import (
 
 type FurnitureRepository interface {
 	Create(ctx context.Context, furniture *model.Furniture) error
-	IsExistByFileId(fileId uuid.UUID) (bool, error)
-	GetById(id int64) (*model.Furniture, error)
-	List() ([]*model.Furniture, error)
-	Page(page int, filter request.FurnitureFilter) ([]*model.Furniture, error)
-	Count() (int, error)
+	IsExistByFileId(ctx context.Context, fileId uuid.UUID) (bool, error)
+	Page(ctx context.Context, filter request.FurnitureFilter) ([]*model.Furniture, int, error)
+	GetById(ctx context.Context, id int64) (*model.Furniture, error)
 }
 
 type furnitureRepository struct {
@@ -32,61 +32,68 @@ func (r *furnitureRepository) Create(ctx context.Context, furniture *model.Furni
 	return err
 }
 
-func (r *furnitureRepository) IsExistByFileId(fileId uuid.UUID) (bool, error) {
+func (r *furnitureRepository) IsExistByFileId(ctx context.Context, fileId uuid.UUID) (bool, error) {
 	var isExist bool
 	sql := `SELECT COUNT(0) 
 			FROM furniture_t 
 			WHERE file_name = ?`
 
-	err := r.db.Raw(sql, fileId).Scan(&isExist).Error
+	err := r.db.WithContext(ctx).Raw(sql, fileId).Scan(&isExist).Error
 	return isExist, err
 }
 
-func (r *furnitureRepository) List() ([]*model.Furniture, error) {
-	var list []*model.Furniture
-	sql := `SELECT * 
-			FROM furniture_t `
-	err := r.db.Raw(sql).Scan(&list).Error
-
-	return list, err
-}
-
-func (r *furnitureRepository) GetById(id int64) (*model.Furniture, error) {
+func (r *furnitureRepository) GetById(ctx context.Context, id int64) (*model.Furniture, error) {
 	var furniture *model.Furniture
 	sql := `SELECT * 
 			FROM furniture_t 
 			WHERE id = ?`
-	err := r.db.Raw(sql, id).Scan(&furniture).Error
+	err := r.db.WithContext(ctx).Raw(sql, id).Scan(&furniture).Error
 
 	return furniture, err
 }
 
-func (r *furnitureRepository) Page(page int, filter request.FurnitureFilter) ([]*model.Furniture, error) {
-	sql := `SELECT * 
-			FROM furniture_t `
+func (r *furnitureRepository) Page(ctx context.Context, filter request.FurnitureFilter) ([]*model.Furniture, int, error) {
+	var sqlBuilder strings.Builder
+	sqlBuilder.WriteString(`SELECT *,
+							COUNT(1) OVER() as total_rows
+							FROM furniture_t`)
 
-	switch filter.SortByDate {
-	case "latest":
-		sql += ` ORDER BY created_at DESC `
-	case "oldest":
-		sql += ` ORDER BY created_at ASC `
-	default:
-		sql += ` ORDER BY created_at DESC `
+	var params []interface{}
+	var conditions []string
+	if filter.CreatorId != 0 {
+		conditions = append(conditions, "user_id = ?")
+		params = append(params, filter.CreatorId)
+	}
+	if len(conditions) > 0 {
+		sqlBuilder.WriteString(" WHERE ")
+		sqlBuilder.WriteString(strings.Join(conditions, " AND "))
 	}
 
-	sql += `LIMIT ?
-			OFFSET ?`
+	sortRule, ok := constant.FurnitureOrders[constant.OrderOption(filter.Order)]
+	if !ok {
+		sortRule = constant.FurnitureOrders[constant.LATEST_CREATED]
+	}
+	sqlBuilder.WriteString(fmt.Sprintf(" ORDER BY %s %s ", sortRule.Column, sortRule.Direction))
 
-	var list []*model.Furniture
-	err := r.db.Raw(sql, constant.PAGE_LIMIT, constant.PAGE_LIMIT*(page-1)).Scan(&list).Error
+	sqlBuilder.WriteString(" LIMIT ? OFFSET ? ")
+	params = append(params, constant.PAGE_LIMIT)
+	params = append(params, constant.PAGE_LIMIT*(filter.Page-1))
 
-	return list, err
-}
+	sqlString := sqlBuilder.String()
 
-func (r *furnitureRepository) Count() (int, error) {
-	var count int
-	sql := `SELECT COUNT(1) 
-			FROM furniture_t`
-	err := r.db.Raw(sql).Scan(&count).Error
-	return count, err
+	var result []*model.FurnitureWithTotal
+	err := r.db.WithContext(ctx).Raw(sqlString, params...).Scan(&result).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	if len(result) == 0 {
+		return []*model.Furniture{}, 0, nil
+	}
+	furnitureList := make([]*model.Furniture, len(result))
+	for i, item := range result {
+		furnitureList[i] = &item.Furniture
+	}
+	totalRows := result[0].TotalRows
+
+	return furnitureList, totalRows, nil
 }

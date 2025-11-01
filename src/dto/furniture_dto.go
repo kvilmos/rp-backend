@@ -35,9 +35,7 @@ func FromFurnitureModel(furniture *model.Furniture) *FurnitureDto {
 	}
 }
 
-type FurniturePaginationDto struct {
-	NextPage   int            `json:"nextPage"`
-	PrevPage   int            `json:"prevPage"`
+type FurniturePageDto struct {
 	CurrPage   int            `json:"currPage"`
 	TotalPages int            `json:"totalPages"`
 	List       []FurnitureDto `json:"furniture"`
