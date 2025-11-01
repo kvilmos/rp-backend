@@ -30,6 +30,12 @@ func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middlew
 		furniture.GET("/:id", handler.HandleGetFurnitureById)
 	}
 
+	category := e.Group("/category")
+	category.Use(authMiddleware.Authenticate)
+	{
+		category.GET("", handler.HandleGetFurnitureCategory)
+	}
+
 	blueprint := e.Group("/blueprint")
 	blueprint.Use(authMiddleware.Authenticate)
 	{

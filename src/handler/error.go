@@ -32,6 +32,8 @@ const (
 
 	ERROR_RETRIEVING_USER_FURNITURE_LIST = "Error retrieving user furniture list"
 
+	ERROR_RETRIEVING_FURNITURE_CATEGORIES = "Error retrieving furniture categories"
+
 	ERROR_RETRIEVING_USER_BLUEPRINTS = "Error retrieving user blueprints"
 	INVALID_BLUEPRINT_ID             = "Invalid Blueprint ID"
 	BLUEPRINT_NOT_ACCESSED           = "Blueprint not found or access denied"

@@ -5,4 +5,6 @@ const (
 	USER_BLUEPRINT_DELETED    = "User blueprint deleted successfully"
 
 	USER_FURNITURE_LIST_RETRIEVED = "User furniture list retrieved successfully"
+
+	FURNITURE_CATEGORIES_RETRIEVED = "Furniture categories retrieved successfully"
 )
