@@ -44,6 +44,8 @@ func (h *Handler) HandleNewFurniture(c echo.Context) error {
 }
 
 func (h *Handler) HandleGetFurnitureList(c echo.Context) error {
+	filter := request.FurnitureFilter{}
+
 	pageStr := c.QueryParam(string(constant.PAGE))
 	if pageStr == "" {
 		pageStr = "1"
@@ -52,13 +54,20 @@ func (h *Handler) HandleGetFurnitureList(c echo.Context) error {
 	if err != nil {
 		page = 1
 	}
+	filter.Page = page
+
 	order := c.QueryParam(string(constant.ORDER))
 	if order == "" {
 		order = string(constant.RECENTLY_MODIFIED)
 	}
-	filter := request.FurnitureFilter{
-		Page:  page,
-		Order: order,
+	filter.Order = order
+
+	category := c.QueryParam(string(constant.CATEGORY_ID))
+	categoryId, err := strconv.ParseInt(category, 10, 64)
+	if err != nil {
+		filter.CategoryId = nil
+	} else {
+		filter.CategoryId = &categoryId
 	}
 
 	ctx := c.Request().Context()
@@ -98,10 +107,13 @@ func (h *Handler) HandleGetFurnitureList(c echo.Context) error {
 }
 
 func (h *Handler) HandlerGetProfileFurniture(c echo.Context) error {
+	filter := request.FurnitureFilter{}
+
 	claims, ok := c.Get("user_claims").(token.UserClaims)
 	if !ok {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
 	}
+	filter.CreatorId = claims.Id
 
 	pageStr := c.QueryParam(string(constant.PAGE))
 	if pageStr == "" {
@@ -111,14 +123,20 @@ func (h *Handler) HandlerGetProfileFurniture(c echo.Context) error {
 	if err != nil {
 		page = 1
 	}
+	filter.Page = page
+
 	order := c.QueryParam(string(constant.ORDER))
 	if order == "" {
 		order = string(constant.RECENTLY_MODIFIED)
 	}
-	filter := request.FurnitureFilter{
-		Page:      page,
-		Order:     order,
-		CreatorId: claims.Id,
+	filter.Order = order
+
+	category := c.QueryParam(string(constant.CATEGORY_ID))
+	categoryId, err := strconv.ParseInt(category, 10, 64)
+	if err != nil {
+		filter.CategoryId = nil
+	} else {
+		filter.CategoryId = &categoryId
 	}
 
 	ctx := c.Request().Context()

@@ -34,6 +34,7 @@ func NewFurnitureService(fr repository.FurnitureRepository, fs repository.FileSt
 type FurnitureUploadStatus struct {
 	UserId              int64   `json:"userId"`
 	FurnitureName       string  `json:"furnitureName"`
+	CategoryId          int64   `json:"categoryId"`
 	SizeX               float64 `json:"sizeX"`
 	SizeY               float64 `json:"sizeY"`
 	SizeZ               float64 `json:"sizeZ"`
@@ -65,6 +66,7 @@ func (s FurnitureService) PrepareUpload(ctx context.Context, furniture request.N
 
 	uploadStatus := FurnitureUploadStatus{
 		UserId:        furniture.UserId,
+		CategoryId:    furniture.CategoryId,
 		SizeX:         furniture.SizeX,
 		SizeY:         furniture.SizeY,
 		SizeZ:         furniture.SizeZ,
@@ -154,12 +156,13 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 			log.Printf("INFO: Furniture with key %s already exists in DB. Skipping insert.", fileId)
 		} else {
 			newFurniture := model.Furniture{
-				UserId:   uploadStatus.UserId,
-				Name:     uploadStatus.FurnitureName,
-				SizeX:    uploadStatus.SizeX,
-				SizeY:    uploadStatus.SizeY,
-				SizeZ:    uploadStatus.SizeZ,
-				FileName: fileId,
+				UserId:     uploadStatus.UserId,
+				Name:       uploadStatus.FurnitureName,
+				CategoryId: uploadStatus.CategoryId,
+				SizeX:      uploadStatus.SizeX,
+				SizeY:      uploadStatus.SizeY,
+				SizeZ:      uploadStatus.SizeZ,
+				FileName:   fileId,
 			}
 			err := s.FurnitureRepo.Create(ctx, &newFurniture)
 			if err != nil {

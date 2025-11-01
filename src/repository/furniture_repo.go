@@ -64,6 +64,12 @@ func (r *furnitureRepository) Page(ctx context.Context, filter request.Furniture
 		conditions = append(conditions, "user_id = ?")
 		params = append(params, filter.CreatorId)
 	}
+
+	if filter.CategoryId != nil {
+		conditions = append(conditions, "category_id = ?")
+		params = append(params, filter.CategoryId)
+	}
+
 	if len(conditions) > 0 {
 		sqlBuilder.WriteString(" WHERE ")
 		sqlBuilder.WriteString(strings.Join(conditions, " AND "))

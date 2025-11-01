@@ -14,7 +14,7 @@ type FurnitureDto struct {
 	SizeX        float64   `json:"sizeX"`
 	SizeY        float64   `json:"sizeY"`
 	SizeZ        float64   `json:"sizeZ"`
-	CategoryId   int8      `json:"categoryId"`
+	CategoryId   int64     `json:"categoryId"`
 	FileName     uuid.UUID `json:"fileName"`
 	ThumbnailUrl string    `json:"thumbnailUrl"`
 	ObjectUrl    string    `json:"objectUrl"`

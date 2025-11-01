@@ -30,7 +30,7 @@ func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middlew
 		furniture.GET("/:id", handler.HandleGetFurnitureById)
 	}
 
-	category := e.Group("/category")
+	category := e.Group("/furniture-category")
 	category.Use(authMiddleware.Authenticate)
 	{
 		category.GET("", handler.HandleGetFurnitureCategory)

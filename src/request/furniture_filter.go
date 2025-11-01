@@ -1,7 +1,8 @@
 package request
 
 type FurnitureFilter struct {
-	Page      int
-	Order     string
-	CreatorId int64
+	Page       int
+	Order      string
+	CategoryId *int64
+	CreatorId  int64
 }

@@ -3,8 +3,8 @@ package dto
 import "room-planner/model"
 
 type FurnitureCategoryDto struct {
-	Id   int64
-	Name string
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
 }
 
 func FromFurnitureCategoryModel(category *model.FurnitureCategory) *FurnitureCategoryDto {
