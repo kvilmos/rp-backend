@@ -17,6 +17,7 @@ type FurnitureRepository interface {
 	IsExistByFileId(ctx context.Context, fileId uuid.UUID) (bool, error)
 	Page(ctx context.Context, filter request.FurnitureFilter) ([]*model.Furniture, int, error)
 	GetById(ctx context.Context, id int64) (*model.Furniture, error)
+	DeleteForUser(ctx context.Context, furnitureId int64, userId int64) error
 }
 
 type furnitureRepository struct {
@@ -102,4 +103,22 @@ func (r *furnitureRepository) Page(ctx context.Context, filter request.Furniture
 	totalRows := result[0].TotalRows
 
 	return furnitureList, totalRows, nil
+}
+
+func (r *furnitureRepository) DeleteForUser(ctx context.Context, userId int64, furnitureId int64) error {
+	sql := `DELETE FROM furniture_t
+			WHERE id  = ?
+			AND user_id = ?`
+
+	result := r.db.WithContext(ctx).Exec(sql, furnitureId, userId)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }

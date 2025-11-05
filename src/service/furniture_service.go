@@ -200,6 +200,10 @@ func (s FurnitureService) PageForUser(ctx context.Context, filter request.Furnit
 	return s.FurnitureRepo.Page(ctx, filter)
 }
 
+func (s FurnitureService) DeleteUserFurniture(ctx context.Context, userId int64, furnitureId int64) error {
+	return s.FurnitureRepo.DeleteForUser(ctx, userId, furnitureId)
+}
+
 func (s FurnitureService) GetFurnitureFileUrl(ctx context.Context, fileName uuid.UUID, bucker string) (*url.URL, error) {
 	return s.FileStore.GenerateSignedDownloadUrl(ctx, bucker, fileName.String(), constant.SIGNATURE_TTL)
 }

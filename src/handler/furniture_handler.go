@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"math"
 	"net/http"
 	"room-planner/app"
@@ -13,6 +14,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 func (h *Handler) HandleNewFurniture(c echo.Context) error {
@@ -176,12 +178,12 @@ func (h *Handler) HandlerGetProfileFurniture(c echo.Context) error {
 }
 
 func (h *Handler) HandleGetFurnitureById(c echo.Context) error {
-	pageStr := c.Param("id")
-	id, err := strconv.Atoi(pageStr)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
+	ctx := c.Request().Context()
 
 	furniture, err := h.FurnitureService.GetFurnitureById(ctx, int64(id))
 	if err != nil {
@@ -204,6 +206,31 @@ func (h *Handler) HandleGetFurnitureById(c echo.Context) error {
 	furnDto.ObjectUrl = objectUrl.String()
 
 	return response.SendSuccessResponse(c, "furniture", furnDto)
+}
+
+func (h *Handler) HandleDeleteFurniture(c echo.Context) error {
+	claims, ok := c.Get("user_claims").(token.UserClaims)
+	if !ok {
+		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
+	}
+	userId := claims.Id
+
+	furnitureIdStr := c.Param("id")
+	furnitureId, err := strconv.ParseInt(furnitureIdStr, 10, 64)
+	if err != nil {
+		return err
+	}
+	ctx := c.Request().Context()
+
+	serviceErr := h.FurnitureService.DeleteUserFurniture(ctx, userId, furnitureId)
+	if serviceErr != nil {
+		if errors.Is(serviceErr, gorm.ErrRecordNotFound) {
+			return NewApiError(http.StatusNotFound, FURNITURE_NOT_ACCESSED, serviceErr)
+		}
+		return NewApiError(http.StatusInternalServerError, ERROR_DELETING_USER_FURNITURE, serviceErr)
+	}
+
+	return response.SendSuccessResponse(c, app.USER_FURNITURE_DELETED, nil)
 }
 
 func (h *Handler) HandleUploadNotification(c echo.Context) error {
