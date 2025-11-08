@@ -28,7 +28,7 @@ const (
 	UPDATE_BAD_REQUEST   = "update data failed"
 
 	EMAIL_ALREADY_EXIST       = "registration.emailAlreadyExist"
-	INVALID_LOGIN_CREDENTIALS = "invalidLoginCredentials"
+	INVALID_LOGIN_CREDENTIALS = "login.invalidLoginCredentials"
 
 	ERROR_RETRIEVING_USER_FURNITURE_LIST  = "Error retrieving user furniture list"
 	ERROR_RETRIEVING_FURNITURE_CATEGORIES = "Error retrieving furniture categories"
