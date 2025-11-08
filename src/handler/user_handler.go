@@ -32,7 +32,6 @@ func (h Handler) HandlerRegisterUser(c echo.Context) error {
 		}
 		return err
 	}
-
 	userDto := dto.FromUserModel(user)
 
 	return response.SendSuccessResponse(c, "Sign up successful", userDto)
@@ -146,27 +145,13 @@ func (h Handler) HandleVerifyUser(c echo.Context) error {
 	claims, ok := c.Get("user_claims").(token.UserClaims)
 	if !ok {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
-
 	}
 
 	user, err := h.UserService.GetUserById(claims.Id)
 	if err != nil {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, err)
-
 	}
-
 	userDto := dto.FromUserModel(user)
 
 	return response.SendSuccessResponse(c, "Authenticated user retrieved", userDto)
 }
-
-/*
-	func (h Handler) VerifyUser(c echo.Context) error {
-		claims, ok := c.Get("user_claims").(token.UserClaims)
-		if !ok {
-			return response.SendInternalServerErrorResponse(c, "User authentication failed")
-		}
-
-		return response.SendSuccessResponse(c, "Authenticated user retrieved", claims)
-	}
-*/

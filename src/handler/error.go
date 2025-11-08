@@ -27,7 +27,7 @@ const (
 	INVALID_PAYLOAD      = "Invalid JSON payload."
 	UPDATE_BAD_REQUEST   = "update data failed"
 
-	EMAIL_ALREADY_EXIST       = "The email address has already been taken."
+	EMAIL_ALREADY_EXIST       = "registration.emailAlreadyExist"
 	INVALID_LOGIN_CREDENTIALS = "invalidLoginCredentials"
 
 	ERROR_RETRIEVING_USER_FURNITURE_LIST  = "Error retrieving user furniture list"
