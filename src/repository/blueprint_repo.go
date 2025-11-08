@@ -13,6 +13,7 @@ import (
 )
 
 type BlueprintRepository interface {
+	WithTx(tx *gorm.DB) BlueprintRepository
 	Create(ctx context.Context, blueprint *model.Blueprint) error
 	Page(ctx context.Context, filter request.BlueprintFilter) ([]*model.Blueprint, int, error)
 	GetById(ctx context.Context, id int64) (*model.Blueprint, error)
@@ -27,6 +28,10 @@ type blueprintRepository struct {
 
 func NewBlueprintRepository(db *gorm.DB) BlueprintRepository {
 	return &blueprintRepository{db: db}
+}
+
+func (r *blueprintRepository) WithTx(tx *gorm.DB) BlueprintRepository {
+	return NewBlueprintRepository(tx)
 }
 
 func (r *blueprintRepository) Create(ctx context.Context, blueprint *model.Blueprint) error {

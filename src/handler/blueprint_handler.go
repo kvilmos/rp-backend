@@ -56,7 +56,7 @@ func (h Handler) HandleSaveBlueprint(c echo.Context) error {
 		}
 	}
 
-	ctx := context.Background()
+	ctx := c.Request().Context()
 	blueprint, err := h.BpService.GetBlueprintById(ctx, int64(blueprintId))
 	if err != nil {
 		return err

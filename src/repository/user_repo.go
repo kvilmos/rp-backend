@@ -7,6 +7,7 @@ import (
 )
 
 type UserRepository interface {
+	WithTx(tx *gorm.DB) UserRepository
 	Create(user *model.User) error
 	GetByEmail(email string) (*model.User, error)
 	GetById(id int64) (*model.User, error)
@@ -18,6 +19,10 @@ type userRepository struct {
 
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
+}
+
+func (r *userRepository) WithTx(tx *gorm.DB) UserRepository {
+	return NewUserRepository(tx)
 }
 
 func (r *userRepository) Create(user *model.User) error {

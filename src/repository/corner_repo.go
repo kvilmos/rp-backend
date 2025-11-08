@@ -8,6 +8,7 @@ import (
 )
 
 type CornerRepository interface {
+	WithTx(tx *gorm.DB) CornerRepository
 	Create(ctx context.Context, corners *model.Corner) error
 	CreateMultiple(ctx context.Context, corners []*model.Corner) error
 	DeleteByBlueprintId(ctx context.Context, id int64) error
@@ -26,6 +27,10 @@ type cornerRepository struct {
 
 func NewCornerRepository(db *gorm.DB) CornerRepository {
 	return &cornerRepository{db: db}
+}
+
+func (r *cornerRepository) WithTx(tx *gorm.DB) CornerRepository {
+	return NewCornerRepository(tx)
 }
 
 func (r *cornerRepository) Create(ctx context.Context, corners *model.Corner) error {
