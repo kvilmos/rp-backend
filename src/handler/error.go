@@ -30,7 +30,10 @@ const (
 	EMAIL_ALREADY_EXIST       = "The email address has already been taken."
 	INVALID_LOGIN_CREDENTIALS = "invalidLoginCredentials"
 
-	ERROR_RETRIEVING_USER_FURNITURE_LIST = "Error retrieving user furniture list"
+	ERROR_RETRIEVING_USER_FURNITURE_LIST  = "Error retrieving user furniture list"
+	ERROR_RETRIEVING_FURNITURE_CATEGORIES = "Error retrieving furniture categories"
+	FURNITURE_NOT_ACCESSED                = "Furniture not found or access denied"
+	ERROR_DELETING_USER_FURNITURE         = "Failed to delete furniture"
 
 	ERROR_RETRIEVING_USER_BLUEPRINTS = "Error retrieving user blueprints"
 	INVALID_BLUEPRINT_ID             = "Invalid Blueprint ID"

@@ -19,11 +19,11 @@ type UserService struct {
 	JWTMaker    *token.JWTMaker
 }
 
-func NewUserService(userRepo repository.UserRepository, sessionRepo repository.SessionRepository, db *gorm.DB, jwtMaker *token.JWTMaker) *UserService {
+func NewUserService(db *gorm.DB, userRepo repository.UserRepository, sessionRepo repository.SessionRepository, jwtMaker *token.JWTMaker) *UserService {
 	return &UserService{
+		Db:          db,
 		UserRepo:    userRepo,
 		SessionRepo: sessionRepo,
-		Db:          db,
 		JWTMaker:    jwtMaker,
 	}
 }
@@ -112,13 +112,19 @@ func (s *UserService) RenewUserAccessToken(oldRefreshToken string) (*string, *st
 		return nil, nil, nil, app.ErrInvalidSession
 	}
 
-	user, err := s.UserRepo.GetByEmail(refreshClaims.Email)
+	tx := s.Db.Begin()
+	userTx := s.UserRepo.WithTx(tx)
+	sessionTx := s.SessionRepo.WithTx(tx)
+
+	user, err := userTx.GetByEmail(refreshClaims.Email)
 	if err != nil {
+		tx.Rollback()
 		return nil, nil, nil, err
 	}
 
-	err = s.SessionRepo.Revoke(oldSession.Id)
+	err = sessionTx.Revoke(oldSession.Id)
 	if err != nil {
+		tx.Rollback()
 		return nil, nil, nil, err
 	}
 
@@ -139,7 +145,13 @@ func (s *UserService) RenewUserAccessToken(oldRefreshToken string) (*string, *st
 		IsRevoked:    false,
 		ExpiresAt:    refreshClaims.ExpiresAt.Time,
 	}
-	_, err = s.SessionRepo.Create(newSession)
+	_, err = sessionTx.Create(newSession)
+	if err != nil {
+		tx.Rollback()
+		return nil, nil, nil, err
+	}
+
+	err = tx.Commit().Error
 	if err != nil {
 		return nil, nil, nil, err
 	}

@@ -29,6 +29,7 @@ var FurnitureOrders = map[OrderOption]SortRule{
 type FilterParm string
 
 const (
-	PAGE  FilterParm = "page"
-	ORDER FilterParm = "order"
+	PAGE        FilterParm = "page"
+	ORDER       FilterParm = "order"
+	CATEGORY_ID FilterParm = "category"
 )

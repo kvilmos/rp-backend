@@ -49,7 +49,7 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
-	userService := service.NewUserService(userRepo, sessionRepo, db, jwtMaker)
+	userService := service.NewUserService(db, userRepo, sessionRepo, jwtMaker)
 
 	furnitureRepo := repository.NewFurnitureRepository(db)
 	fileRepo := repository.NewFileRepository(minioClient)
@@ -58,14 +58,17 @@ func main() {
 	queue := repository.NewQueue(redisClient)
 	furnitureService := service.NewFurnitureService(furnitureRepo, fileRepo, cacheRepo, queue, locker)
 
+	furnitureCategoryRepo := repository.NewFurnitureCategoryRepository(db)
+	furnitureCategoryService := service.NewFurnitureCategoryService(furnitureCategoryRepo)
+
 	bpRepo := repository.NewBlueprintRepository(db)
 	cornerRepo := repository.NewCornerRepository(db)
 	wallRepo := repository.NewWallRepository(db)
 	itemRepo := repository.NewItemRepository(db)
-	bpService := service.NewBlueprintService(bpRepo, cornerRepo, wallRepo, itemRepo)
+	bpService := service.NewBlueprintService(db, bpRepo, cornerRepo, wallRepo, itemRepo)
 
 	authMiddleware := middleware.NewAuthMiddleware(userService, jwtMaker)
-	apiHandler := handler.NewHandler(userService, furnitureService, bpService)
+	apiHandler := handler.NewHandler(userService, furnitureService, furnitureCategoryService, bpService)
 
 	observer := observer.New(redisClient, *furnitureService)
 	observer.Start(context.Background())

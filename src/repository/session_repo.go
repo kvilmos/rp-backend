@@ -7,6 +7,7 @@ import (
 )
 
 type SessionRepository interface {
+	WithTx(tx *gorm.DB) SessionRepository
 	Create(session *model.Session) (*model.Session, error)
 	GetById(id string) (*model.Session, error)
 	Revoke(id string) error
@@ -19,6 +20,10 @@ type sessionRepository struct {
 
 func NewSessionRepository(db *gorm.DB) SessionRepository {
 	return &sessionRepository{db: db}
+}
+
+func (r *sessionRepository) WithTx(tx *gorm.DB) SessionRepository {
+	return NewSessionRepository(tx)
 }
 
 func (r *sessionRepository) Create(session *model.Session) (*model.Session, error) {

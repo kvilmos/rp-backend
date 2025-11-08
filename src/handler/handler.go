@@ -5,15 +5,17 @@ import (
 )
 
 type Handler struct {
-	UserService      *service.UserService
-	FurnitureService *service.FurnitureService
-	BpService        *service.BlueprintService
+	UserService         *service.UserService
+	FurnitureService    *service.FurnitureService
+	FurnitureCatService *service.FurnitureCategoryService
+	BpService           *service.BlueprintService
 }
 
-func NewHandler(us *service.UserService, fs *service.FurnitureService, bps *service.BlueprintService) *Handler {
+func NewHandler(us *service.UserService, fs *service.FurnitureService, fcs *service.FurnitureCategoryService, bps *service.BlueprintService) *Handler {
 	return &Handler{
-		UserService:      us,
-		FurnitureService: fs,
-		BpService:        bps,
+		UserService:         us,
+		FurnitureService:    fs,
+		FurnitureCatService: fcs,
+		BpService:           bps,
 	}
 }

@@ -13,7 +13,7 @@ type Furniture struct {
 	SizeX      float64
 	SizeY      float64
 	SizeZ      float64
-	CategoryId int8
+	CategoryId int64
 	FileName   uuid.UUID
 	CreatedAt  time.Time
 }

@@ -7,17 +7,20 @@ import (
 	"room-planner/request"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type BlueprintService struct {
+	Db                  *gorm.DB
 	BlueprintRepository repository.BlueprintRepository
 	CornerRepository    repository.CornerRepository
 	WallRepository      repository.WallRepository
 	ItemRepository      repository.ItemRepository
 }
 
-func NewBlueprintService(bpr repository.BlueprintRepository, cr repository.CornerRepository, wr repository.WallRepository, ir repository.ItemRepository) *BlueprintService {
+func NewBlueprintService(db *gorm.DB, bpr repository.BlueprintRepository, cr repository.CornerRepository, wr repository.WallRepository, ir repository.ItemRepository) *BlueprintService {
 	return &BlueprintService{
+		Db:                  db,
 		BlueprintRepository: bpr,
 		CornerRepository:    cr,
 		WallRepository:      wr,
@@ -53,21 +56,35 @@ func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq reques
 		UserId: blueprintReq.UserId,
 	}
 
-	err := s.BlueprintRepository.Update(ctx, blueprint, blueprint.Id)
+	tx := s.Db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	blueprintTx := s.BlueprintRepository.WithTx(tx)
+	cornerTx := s.CornerRepository.WithTx(tx)
+	wallTx := s.WallRepository.WithTx(tx)
+	itemTx := s.ItemRepository.WithTx(tx)
+
+	err := blueprintTx.Update(ctx, blueprint, blueprint.Id)
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
-	err = s.WallRepository.DeleteByBlueprintId(ctx, blueprint.Id)
+	err = wallTx.DeleteByBlueprintId(ctx, blueprint.Id)
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
-	err = s.ItemRepository.DeleteByBlueprintId(ctx, blueprint.Id)
+	err = itemTx.DeleteByBlueprintId(ctx, blueprint.Id)
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
-	err = s.CornerRepository.DeleteByBlueprintId(ctx, blueprint.Id)
+	err = cornerTx.DeleteByBlueprintId(ctx, blueprint.Id)
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -87,8 +104,9 @@ func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq reques
 		cornerMap[id] = corner.Id
 	}
 	if corners != nil {
-		err = s.CornerRepository.CreateMultiple(ctx, corners)
+		err = cornerTx.CreateMultiple(ctx, corners)
 		if err != nil {
+			tx.Rollback()
 			return nil, err
 		}
 	}
@@ -106,8 +124,9 @@ func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq reques
 	}
 
 	if walls != nil {
-		err = s.WallRepository.CreateMultiple(ctx, walls)
+		err = wallTx.CreateMultiple(ctx, walls)
 		if err != nil {
+			tx.Rollback()
 			return nil, err
 		}
 	}
@@ -128,10 +147,16 @@ func (s BlueprintService) SaveBlueprint(ctx context.Context, blueprintReq reques
 	}
 
 	if items != nil {
-		err = s.ItemRepository.CreateMultiple(ctx, items)
+		err = itemTx.CreateMultiple(ctx, items)
 		if err != nil {
+			tx.Rollback()
 			return nil, err
 		}
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		return nil, err
 	}
 
 	return blueprint, nil
