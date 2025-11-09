@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"room-planner/app"
+	"room-planner/common/constant"
 	"room-planner/handler"
 	"room-planner/service"
 	"room-planner/token"
@@ -41,7 +42,7 @@ func (auth *AuthMiddleware) Authenticate(next echo.HandlerFunc) echo.HandlerFunc
 		if err != nil {
 			return handler.NewApiError(http.StatusUnauthorized, handler.UNAUTHORIZED_REQUEST, err)
 		}
-		c.Set("user_claims", *claims)
+		c.Set(constant.USER_CLAIMS, *claims)
 
 		return next(c)
 	}
