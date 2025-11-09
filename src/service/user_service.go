@@ -2,12 +2,12 @@ package service
 
 import (
 	"room-planner/app"
+	"room-planner/common/constant"
 	"room-planner/model"
 	"room-planner/repository"
 	"room-planner/request"
 	"room-planner/token"
 	"room-planner/util"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -67,12 +67,12 @@ func (s *UserService) LoginUser(loginReq request.LoginRequest) (*string, *string
 		return nil, nil, nil, nil, app.ErrInvalidCredentials
 	}
 
-	accessToken, _, err := s.JWTMaker.GenerateToken(user, 10*time.Minute)
+	accessToken, _, err := s.JWTMaker.GenerateToken(user, constant.ACCESS_TOKEN_TTL)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
-	refreshToken, refreshClaims, err := s.JWTMaker.GenerateToken(user, 24*time.Hour)
+	refreshToken, refreshClaims, err := s.JWTMaker.GenerateToken(user, constant.REFRESH_TOKEN_TTL)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -128,12 +128,12 @@ func (s *UserService) RenewUserAccessToken(oldRefreshToken string) (*string, *st
 		return nil, nil, nil, err
 	}
 
-	accessToken, _, err := s.JWTMaker.GenerateToken(user, 15*time.Minute)
+	accessToken, _, err := s.JWTMaker.GenerateToken(user, constant.ACCESS_TOKEN_TTL)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	refreshToken, refreshClaims, err := s.JWTMaker.GenerateToken(user, 15*time.Minute)
+	refreshToken, refreshClaims, err := s.JWTMaker.GenerateToken(user, constant.REFRESH_TOKEN_TTL)
 	if err != nil {
 		return nil, nil, nil, err
 	}

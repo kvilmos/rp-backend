@@ -1,6 +1,12 @@
 package app
 
 const (
+	LOGIN_SUCCESS        = "success.login"
+	LOGOUT_SUCCESS       = "success.logout"
+	REGISTRATION_SUCCESS = "success.registration"
+	TOKEN_RENEWED        = "success.renewToken"
+	USER_RETRIEVED       = "success.retrieveUser"
+
 	USER_BLUEPRINTS_RETRIEVED = "User's blueprints retrieved successfully"
 	USER_BLUEPRINT_DELETED    = "Blueprint  deleted successfully"
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"room-planner/app"
+	"room-planner/common/constant"
 	"room-planner/dto"
 	"room-planner/request"
 	"room-planner/response"
@@ -32,10 +33,9 @@ func (h Handler) HandlerRegisterUser(c echo.Context) error {
 		}
 		return err
 	}
-
 	userDto := dto.FromUserModel(user)
 
-	return response.SendSuccessResponse(c, "Sign up successful", userDto)
+	return response.SendSuccessResponse(c, app.REGISTRATION_SUCCESS, userDto)
 }
 
 func (h Handler) HandlerLoginUser(c echo.Context) error {
@@ -61,7 +61,7 @@ func (h Handler) HandlerLoginUser(c echo.Context) error {
 	expiresAt := refreshClaims.RegisteredClaims.ExpiresAt.Time
 	maxAge := int(time.Until(expiresAt).Seconds())
 	cookie := &http.Cookie{
-		Name:     "refresh_token",
+		Name:     constant.REFRESH_TOKEN_COOKIE,
 		Value:    *refreshToken,
 		Expires:  expiresAt,
 		MaxAge:   maxAge,
@@ -73,14 +73,16 @@ func (h Handler) HandlerLoginUser(c echo.Context) error {
 	}
 	c.SetCookie(cookie)
 
-	return response.SendSuccessResponse(c, "User logged in", dto.LoginDto{
+	loginDto := dto.LoginDto{
 		AccessToken: *accessToken,
 		User:        *dto.FromUserModel(user),
-	})
+	}
+
+	return response.SendSuccessResponse(c, app.LOGIN_SUCCESS, loginDto)
 }
 
 func (h Handler) HandlerRenewToken(c echo.Context) error {
-	cookie, err := c.Cookie("refresh_token")
+	cookie, err := c.Cookie(constant.REFRESH_TOKEN_COOKIE)
 	if err != nil {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, err)
 	}
@@ -94,7 +96,7 @@ func (h Handler) HandlerRenewToken(c echo.Context) error {
 	expiresAt := newRefreshClaims.RegisteredClaims.ExpiresAt.Time
 	maxAge := int(time.Until(expiresAt).Seconds())
 	newCookie := &http.Cookie{
-		Name:     "refresh_token",
+		Name:     constant.REFRESH_TOKEN_COOKIE,
 		Value:    *newRefreshToken,
 		Expires:  expiresAt,
 		MaxAge:   maxAge,
@@ -106,13 +108,13 @@ func (h Handler) HandlerRenewToken(c echo.Context) error {
 	}
 	c.SetCookie(newCookie)
 
-	return response.SendSuccessResponse(c, "token renewed", dto.RenewAccessTokenDto{
+	return response.SendSuccessResponse(c, app.TOKEN_RENEWED, dto.RenewAccessTokenDto{
 		AccessToken: *newAccessToken,
 	})
 }
 
 func (h Handler) HandleLogoutUser(c echo.Context) error {
-	cookie, err := c.Cookie("refresh_token")
+	cookie, err := c.Cookie(constant.REFRESH_TOKEN_COOKIE)
 	if err != nil {
 		return err
 	}
@@ -126,10 +128,10 @@ func (h Handler) HandleLogoutUser(c echo.Context) error {
 	}
 
 	newCookie := &http.Cookie{
-		Name:     "refresh_token",
+		Name:     constant.REFRESH_TOKEN_COOKIE,
 		Value:    "",
 		Expires:  time.Unix(0, 0),
-		MaxAge:   -1,
+		MaxAge:   0,
 		Path:     "/",
 		Domain:   "localhost",
 		Secure:   false,
@@ -139,34 +141,20 @@ func (h Handler) HandleLogoutUser(c echo.Context) error {
 
 	c.SetCookie(newCookie)
 
-	return response.SendSuccessResponse(c, "logout success", "")
+	return response.SendSuccessResponse(c, app.LOGOUT_SUCCESS, "")
 }
 
 func (h Handler) HandleVerifyUser(c echo.Context) error {
-	claims, ok := c.Get("user_claims").(token.UserClaims)
+	claims, ok := c.Get(constant.USER_CLAIMS).(token.UserClaims)
 	if !ok {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, app.ErrClaimsParsingFailed)
-
 	}
 
 	user, err := h.UserService.GetUserById(claims.Id)
 	if err != nil {
 		return NewApiError(http.StatusUnauthorized, UNAUTHORIZED_REQUEST, err)
-
 	}
-
 	userDto := dto.FromUserModel(user)
 
-	return response.SendSuccessResponse(c, "Authenticated user retrieved", userDto)
+	return response.SendSuccessResponse(c, app.USER_RETRIEVED, userDto)
 }
-
-/*
-	func (h Handler) VerifyUser(c echo.Context) error {
-		claims, ok := c.Get("user_claims").(token.UserClaims)
-		if !ok {
-			return response.SendInternalServerErrorResponse(c, "User authentication failed")
-		}
-
-		return response.SendSuccessResponse(c, "Authenticated user retrieved", claims)
-	}
-*/
