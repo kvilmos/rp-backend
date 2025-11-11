@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"room-planner/handler"
 	"room-planner/middleware"
 	"room-planner/observer"
@@ -12,25 +13,15 @@ import (
 	"room-planner/storage"
 	"room-planner/token"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
-	"github.com/minio/minio-go/v7"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 )
 
-type Application struct {
-	Server *echo.Echo
-	Db     *gorm.DB
-	MinIO  *minio.Client
-	Redis  *redis.Client
-
-	APIHandler     *handler.Handler
-	AuthMiddleware *middleware.AuthMiddleware
-}
-
 func main() {
-	secretKey := "d4mqw2lvfivh7fcr32igzf5q12345678" // min 32
-	// env
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	db, err := storage.NewMySQLConnection()
 	if err != nil {
@@ -45,7 +36,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	jwtMaker := token.NewJWTMaker(secretKey)
+	jwtMaker := token.NewJWTMaker(os.Getenv("JWT_SECRET"))
 
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
@@ -78,7 +69,7 @@ func main() {
 	server.Use(middleware.ErrorMiddleware)
 
 	router.SetupRoutes(server, apiHandler, authMiddleware)
-	err = server.Start(":4747")
+	err = server.Start(os.Getenv("SERVER_PORT"))
 	if err != nil {
 		log.Fatal(err)
 	}

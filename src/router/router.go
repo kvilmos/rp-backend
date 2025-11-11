@@ -53,5 +53,9 @@ func SetupRoutes(e *echo.Echo, handler *handler.Handler, authMiddleware *middlew
 		profile.GET("/blueprint", handler.HandlerGetProfileBlueprints)
 	}
 
-	e.POST("/minio/upload-hook", handler.HandleUploadNotification)
+	minio := e.Group("/minio")
+	{
+		minio.POST("/upload-hook", handler.HandleUploadNotification)
+	}
+
 }
