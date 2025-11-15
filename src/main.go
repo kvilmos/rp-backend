@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"room-planner/handler"
 	"room-planner/middleware"
@@ -18,22 +18,29 @@ import (
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		return
 	}
 
 	db, err := storage.NewMySQLConnection()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		return
 	}
 	minioClient, err := storage.NewMinioClient()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		return
 	}
 	redisClient, err := storage.NewRedisClient()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		return
 	}
 
 	jwtMaker := token.NewJWTMaker(os.Getenv("JWT_SECRET"))
@@ -71,6 +78,7 @@ func main() {
 	router.SetupRoutes(server, apiHandler, authMiddleware)
 	err = server.Start(os.Getenv("SERVER_PORT"))
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		return
 	}
 }
