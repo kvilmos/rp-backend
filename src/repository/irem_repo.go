@@ -40,5 +40,5 @@ func (r *itemRepository) DeleteByBlueprintId(ctx context.Context, id int64) erro
 	sql := `DELETE FROM item_t 
 			WHERE blueprint_id = ?`
 
-	return r.db.Exec(sql, id).Error
+	return r.db.WithContext(ctx).Exec(sql, id).Error
 }

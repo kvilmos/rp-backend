@@ -34,5 +34,5 @@ func (r *wallRepository) DeleteByBlueprintId(ctx context.Context, id int64) erro
 			WHERE start_corner_id IN 
 				(SELECT id FROM corner_t WHERE blueprint_id = ?)`
 
-	return r.db.Exec(sql, id).Error
+	return r.db.WithContext(ctx).Exec(sql, id).Error
 }
