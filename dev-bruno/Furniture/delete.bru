@@ -1,0 +1,20 @@
+meta {
+  name: delete
+  type: http
+  seq: 8
+}
+
+delete {
+  url: http://localhost/api/furniture/102
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

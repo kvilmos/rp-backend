@@ -1,0 +1,26 @@
+meta {
+  name: sorter/filter/page
+  type: http
+  seq: 3
+}
+
+get {
+  url: http://localhost/api/furniture?category=2&page=1&order=latest_created
+  body: none
+  auth: bearer
+}
+
+params:query {
+  category: 2
+  page: 1
+  order: latest_created
+}
+
+auth:bearer {
+  token: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

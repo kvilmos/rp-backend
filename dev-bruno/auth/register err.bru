@@ -1,0 +1,24 @@
+meta {
+  name: register err
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost/api/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "e",
+    "email": "e",
+    "password": "e"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

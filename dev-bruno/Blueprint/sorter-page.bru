@@ -1,0 +1,29 @@
+meta {
+  name: sorter/page
+  type: http
+  seq: 8
+}
+
+get {
+  url: http://localhost/api/profile/blueprint?page=1&order=recently_modifired
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 1
+  order: recently_modifired
+}
+
+headers {
+  : 
+}
+
+auth:bearer {
+  token: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
