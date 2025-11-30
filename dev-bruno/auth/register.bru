@@ -1,0 +1,19 @@
+meta {
+  name: register
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost/api/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "Auth Test",
+    "email": "auth.test@rp.com",
+    "password": "password"
+  }
+}

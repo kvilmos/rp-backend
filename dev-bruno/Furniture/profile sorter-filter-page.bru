@@ -1,0 +1,25 @@
+meta {
+  name: profile sorter/filter/page
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost/api/profile/furniture?page=1&order=latest_created
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 1
+  order: latest_created
+}
+
+auth:bearer {
+  token: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
