@@ -1,15 +1,17 @@
 package storage
 
 import (
+	"os"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
 func NewMySQLConnection() (*gorm.DB, error) {
-	connection := "develop:develop@tcp(127.0.0.1:3306)/room-planner?charset=utf8mb4&parseTime=True&loc=Local"
+	connectionStr := os.Getenv("MYSQL_STR")
 
-	db, err := gorm.Open(mysql.Open(connection), &gorm.Config{
+	db, err := gorm.Open(mysql.Open(connectionStr), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {

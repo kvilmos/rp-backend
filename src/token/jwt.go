@@ -41,7 +41,6 @@ func (m *JWTMaker) VerifyToken(tokenStr string) (*UserClaims, error) {
 		}
 
 		return []byte(m.secretKey), nil
-
 	})
 
 	if err != nil {

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 	"room-planner/handler"
 	"room-planner/response"
@@ -16,8 +16,7 @@ func ErrorMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return nil
 		}
 
-		// TODO Logger
-		fmt.Println(err)
+		slog.Error(err.Error())
 
 		apiError, ok := err.(handler.ApiError)
 		if ok {

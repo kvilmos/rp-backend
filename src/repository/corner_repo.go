@@ -18,7 +18,7 @@ func (r *cornerRepository) DeleteByBlueprintId(ctx context.Context, id int64) er
 	sql := `DELETE FROM corner_t 
 			WHERE blueprint_id = ?`
 
-	return r.db.Exec(sql, id).Error
+	return r.db.WithContext(ctx).Exec(sql, id).Error
 }
 
 type cornerRepository struct {

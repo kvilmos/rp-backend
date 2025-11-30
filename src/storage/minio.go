@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"os"
 	"room-planner/common/constant"
 
 	"github.com/minio/minio-go/v7"
@@ -9,9 +10,9 @@ import (
 )
 
 func NewMinioClient() (*minio.Client, error) {
-	endpoint := "127.0.0.1:9000"
-	accessKeyID := "minioadmin"
-	secretAccessKey := "minioadmin"
+	endpoint := os.Getenv("MINIO_ENDPOINT")
+	accessKeyID := os.Getenv("MINIO_USERNAME")
+	secretAccessKey := os.Getenv("MINIO_PASSWORD")
 	useSSL := false
 
 	client, err := minio.New(endpoint, &minio.Options{

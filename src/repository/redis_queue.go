@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -23,7 +22,6 @@ func NewQueue(client *redis.Client) Queue {
 }
 
 func (r *queue) Enqueue(ctx context.Context, queueName string, value any) error {
-	fmt.Println("IN REPO - ENQUEUE")
 	message, err := json.Marshal(value)
 	if err != nil {
 		return err

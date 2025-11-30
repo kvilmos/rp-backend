@@ -90,7 +90,7 @@ func (r *blueprintRepository) GetById(ctx context.Context, id int64) (*model.Blu
 	sql := `SELECT * 
 			FROM blueprint_t
 			WHERE id = ?`
-	err := r.db.Raw(sql, id).Scan(&blueprint).Error
+	err := r.db.WithContext(ctx).Raw(sql, id).Scan(&blueprint).Error
 
 	return blueprint, err
 }
@@ -102,7 +102,7 @@ func (r *blueprintRepository) Update(ctx context.Context, blueprint *model.Bluep
 
 func (r *blueprintRepository) GetCompleteById(ctx context.Context, id int64) (*model.Blueprint, error) {
 	var blueprint *model.Blueprint
-	err := r.db.Where("id = ?", id).Preload("Corners").Preload("Items.Furniture").Preload("Walls").Find(&blueprint).Error
+	err := r.db.WithContext(ctx).Where("id = ?", id).Preload("Corners").Preload("Items.Furniture").Preload("Walls").Find(&blueprint).Error
 
 	return blueprint, err
 }
@@ -112,7 +112,7 @@ func (r *blueprintRepository) DeleteForUser(ctx context.Context, userId int64, b
 			WHERE id  = ?
 			AND user_id = ?`
 
-	result := r.db.WithContext(ctx).Exec(sql, blueprintId, userId)
+	result := r.db.WithContext(ctx).WithContext(ctx).Exec(sql, blueprintId, userId)
 
 	if result.Error != nil {
 		return result.Error
