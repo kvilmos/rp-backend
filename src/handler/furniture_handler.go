@@ -33,7 +33,6 @@ func (h *Handler) HandleNewFurniture(c echo.Context) error {
 	if validationErrors != nil {
 		return NewApiError(http.StatusUnprocessableEntity, validationErrors, app.ErrValidationFailed)
 	}
-
 	furnitureReq.UserId = claims.Id
 
 	ctx := context.Background()

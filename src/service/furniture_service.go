@@ -2,7 +2,8 @@ package service
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/url"
 	"room-planner/app"
 	"room-planner/common/constant"
@@ -109,24 +110,18 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 	lockKey := constant.DISTRIBUTED_LOCK_PREFIX + fileKey
 	lockValue, err := s.Locker.Acquire(ctx, lockKey, constant.LOCK_TTL)
 	if err != nil {
-		// REQUEUE
-		// TODO STORY-201 ERROR HANDLER
 		return err
 	}
 
 	defer func() {
 		err := s.Locker.Release(ctx, lockKey, lockValue)
 		if err != nil {
-			// REQUEUE
-			// TODO STORY-201 ERROR HANDLER
 		}
 	}()
 
 	uploadStatus := FurnitureUploadStatus{}
 	err = s.Cache.Get(ctx, fileKey, &uploadStatus)
 	if err != nil {
-		// REQUEUE
-		// TODO STORY-201 ERROR HANDLER
 		return err
 	}
 
@@ -140,20 +135,16 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 	if uploadStatus.IsObjectUploaded && uploadStatus.IsThumbnailUploaded {
 		fileId, err := uuid.Parse(fileKey)
 		if err != nil {
-			// TERMINATE
-			// TODO STORY-201 ERROR HANDLER
 			return err
 		}
 
 		exists, err := s.FurnitureRepo.IsExistByFileId(ctx, fileId)
 		if err != nil {
-			// RETRY DB INSERT
-			// TODO STORY-201 ERROR HANDLER
 			return err
 		}
 
 		if exists {
-			log.Printf("INFO: Furniture with key %s already exists in DB. Skipping insert.", fileId)
+			slog.Error(fmt.Sprintf("INFO: Furniture with key %s already exists in DB. Skipping insert.", fileId))
 		} else {
 			newFurniture := model.Furniture{
 				UserId:     uploadStatus.UserId,
@@ -166,16 +157,12 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 			}
 			err := s.FurnitureRepo.Create(ctx, &newFurniture)
 			if err != nil {
-				// RETRY DB INSERT
-				// TODO STORY-201 ERROR HANDLER
 				return err
 			}
 		}
 
 		err = s.Cache.Delete(ctx, fileKey)
 		if err != nil {
-			// RETRY TERMINATE
-			// TODO STORY-201 ERROR HANDLER
 			return err
 		}
 
@@ -184,8 +171,6 @@ func (s FurnitureService) FinalizeUpload(ctx context.Context, notification Uploa
 
 	err = s.Cache.Set(ctx, fileKey, uploadStatus, constant.UPLOAD_TTL)
 	if err != nil {
-		// REQUEUE
-		// TODO STORY-201 ERROR HANDLER
 		return err
 	}
 
