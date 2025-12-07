@@ -1,0 +1,20 @@
+meta {
+  name: profile
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://localhost/api/profile/furniture
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

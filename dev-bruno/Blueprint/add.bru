@@ -1,0 +1,65 @@
+meta {
+  name: add
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost/api/blueprint
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: 
+}
+
+body:json {
+  {
+    "corners": [
+      {
+        "id": "a1",
+        "x": 0,
+        "y": 0
+      },
+      {
+        "id": "a2",
+        "x": 0,
+        "y": 500
+      },
+      {
+        "id": "a3",
+        "x": 500,
+        "y": 0
+      },
+      {
+        "id": "a4",
+        "x": 500,
+        "y": 500
+      }
+    ],
+    "walls": [
+      {
+        "startCornerId": "a1",
+        "endCornerId": "a2"
+      },
+      {
+        "startCornerId": "a2",
+        "endCornerId": "a4"
+      },
+      {
+        "startCornerId": "a4",
+        "endCornerId": "a3"
+      },
+      {
+        "startCornerId": "a3",
+        "endCornerId": "a1"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
